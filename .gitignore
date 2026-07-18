@@ -2,6 +2,7 @@
 *.tfstate
 *.tfstate.*
 *.tfplan
+tfplan
 *.tflock
 backend.hcl
 terraform.tfvars
