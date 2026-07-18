@@ -1,0 +1,66 @@
+name: terraform-ci
+
+on:
+  pull_request:
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars.example"
+      - ".tflint.hcl"
+      - ".checkov.yml"
+      - "Makefile"
+      - ".github/workflows/terraform-ci.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars.example"
+      - ".tflint.hcl"
+      - ".checkov.yml"
+      - "Makefile"
+      - ".github/workflows/terraform-ci.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-ci:
+    name: terraform-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: 1.10.5
+      - uses: terraform-linters/setup-tflint@v4.1.1
+        with:
+          tflint_version: v0.59.1
+      - name: Install Checkov
+        run: pip install --disable-pip-version-check checkov==3.2.471
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+      - name: Validate Terraform roots
+        shell: bash
+        run: |
+          set -euo pipefail
+          roots=(
+            bootstrap/terraform-state
+            environments/platform
+            modules/platform_cluster
+            modules/platform_cluster_bootstrap
+            modules/ack_iam_role_selector
+          )
+          for root in "${roots[@]}"; do
+            test -f "$root/versions.tf" || continue
+            terraform -chdir="$root" init -backend=false -input=false
+            terraform -chdir="$root" validate
+          done
+      - name: Run TFLint
+        run: |
+          tflint --init
+          tflint --recursive --config "$GITHUB_WORKSPACE/.tflint.hcl"
+      - name: Run Checkov
+        run: checkov -d . --framework terraform --config-file .checkov.yml

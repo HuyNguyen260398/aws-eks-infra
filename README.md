@@ -91,3 +91,7 @@ make yaml-check
 ```
 
 These commands will remain local and CI quality gates; pull-request workflows will not receive AWS credentials or apply infrastructure.
+
+## GitHub Protection
+
+After the `terraform-ci` and `yaml-ci` workflows have each passed once on `main`, configure a GitHub ruleset for `main` that requires both checks, requires pull requests, and blocks force pushes. This one-time GitHub setting is intentionally not managed through Terraform.

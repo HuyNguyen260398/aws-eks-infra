@@ -1,0 +1,52 @@
+name: yaml-ci
+
+on:
+  pull_request:
+    paths:
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "gitops/**"
+      - ".yamllint.yml"
+      - "Makefile"
+      - ".github/workflows/yaml-ci.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "gitops/**"
+      - ".yamllint.yml"
+      - "Makefile"
+      - ".github/workflows/yaml-ci.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yaml-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yaml-ci:
+    name: yaml-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.18.4
+      - uses: azure/setup-kubectl@v4.0.1
+        with:
+          version: v1.35.0
+      - name: Install YAML tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install --disable-pip-version-check yamllint==1.37.1
+          curl --fail --location --silent --show-error \
+            https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz \
+            --output /tmp/kubeconform.tar.gz
+          tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
+          sudo install /tmp/kubeconform /usr/local/bin/kubeconform
+      - name: Validate YAML and Kubernetes manifests
+        run: make yaml-check
