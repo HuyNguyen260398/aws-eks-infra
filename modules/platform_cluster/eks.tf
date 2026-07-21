@@ -2,6 +2,8 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.0"
 
+  depends_on = [aws_cloudwatch_log_group.eks_control_plane]
+
   name                                     = local.cluster_name
   kubernetes_version                       = var.kubernetes_version
   authentication_mode                      = "API"
