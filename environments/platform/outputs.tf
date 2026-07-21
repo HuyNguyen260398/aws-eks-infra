@@ -12,3 +12,23 @@ output "gitops_repo_url" {
   description = "AWS CodeConnections Git HTTP endpoint for the GitOps repository."
   value       = local.gitops_repo_url
 }
+
+output "vpc_id" {
+  description = "ID of the platform VPC."
+  value       = module.platform_cluster.vpc_id
+}
+
+output "vpc_arn" {
+  description = "ARN of the platform VPC."
+  value       = module.platform_cluster.vpc_arn
+}
+
+output "private_subnet_ids" {
+  description = "IDs of the three private platform subnets."
+  value       = module.platform_cluster.private_subnet_ids
+}
+
+output "public_subnet_ids" {
+  description = "IDs of the three public platform subnets."
+  value       = module.platform_cluster.public_subnet_ids
+}

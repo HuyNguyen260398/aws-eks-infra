@@ -58,3 +58,19 @@ resource "aws_codeconnections_connection" "github" {
   provider_type = "GitHub"
   tags          = local.tags
 }
+
+module "platform_cluster" {
+  source = "../../modules/platform_cluster"
+
+  aws_region            = var.aws_region
+  resource_prefix       = var.resource_prefix
+  environment           = "platform"
+  vpc_cidr              = var.vpc_cidr
+  kubernetes_version    = var.kubernetes_version
+  public_access_cidrs   = var.public_access_cidrs
+  identity_store_id     = local.identity_store_id
+  argocd_admin_group_id = aws_identitystore_group.argocd_admins.group_id
+  github_connection_arn = aws_codeconnections_connection.github.arn
+  gitops_repo_url       = local.gitops_repo_url
+  tags                  = local.tags
+}
