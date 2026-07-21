@@ -19,6 +19,7 @@ check "platform_cluster_inputs" {
       length(var.public_access_cidrs) > 0 &&
       alltrue([for cidr in var.public_access_cidrs : can(cidrnetmask(cidr))]) &&
       length(trimspace(var.identity_store_id)) > 0 &&
+      length(trimspace(var.identity_center_instance_arn)) > 0 &&
       length(trimspace(var.argocd_admin_group_id)) > 0 &&
       length(trimspace(var.github_connection_arn)) > 0 &&
       length(trimspace(var.gitops_repo_url)) > 0

@@ -64,3 +64,23 @@ output "adot_role_arn" {
   description = "ARN of the IAM role used by the ADOT collector service account."
   value       = aws_iam_role.adot.arn
 }
+
+output "argocd_capability_arn" {
+  description = "ARN of the managed Argo CD EKS capability."
+  value       = aws_eks_capability.argocd.arn
+}
+
+output "ack_capability_arn" {
+  description = "ARN of the managed ACK EKS capability."
+  value       = aws_eks_capability.ack.arn
+}
+
+output "kro_capability_arn" {
+  description = "ARN of the managed kro EKS capability."
+  value       = aws_eks_capability.kro.arn
+}
+
+output "argocd_capability_role_name" {
+  description = "Name of the IAM role assumed by the managed Argo CD capability."
+  value       = aws_iam_role.argocd_capability.name
+}

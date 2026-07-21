@@ -38,6 +38,11 @@ variable "identity_store_id" {
   type        = string
 }
 
+variable "identity_center_instance_arn" {
+  description = "ARN of the IAM Identity Center instance used by managed Argo CD."
+  type        = string
+}
+
 variable "argocd_admin_group_id" {
   description = "IAM Identity Center group ID granted managed Argo CD administrator access."
   type        = string

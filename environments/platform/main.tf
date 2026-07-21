@@ -3,8 +3,9 @@ data "aws_caller_identity" "current" {}
 data "aws_ssoadmin_instances" "current" {}
 
 locals {
-  identity_store_id = one(data.aws_ssoadmin_instances.current.identity_store_ids)
-  connection_id     = element(reverse(split("/", aws_codeconnections_connection.github.arn)), 0)
+  identity_store_id            = one(data.aws_ssoadmin_instances.current.identity_store_ids)
+  identity_center_instance_arn = one(data.aws_ssoadmin_instances.current.arns)
+  connection_id                = element(reverse(split("/", aws_codeconnections_connection.github.arn)), 0)
   gitops_repo_url = format(
     "https://codeconnections.%s.amazonaws.com/git-http/%s/%s/%s/%s/%s.git",
     var.aws_region,
@@ -62,15 +63,16 @@ resource "aws_codeconnections_connection" "github" {
 module "platform_cluster" {
   source = "../../modules/platform_cluster"
 
-  aws_region            = var.aws_region
-  resource_prefix       = var.resource_prefix
-  environment           = "platform"
-  vpc_cidr              = var.vpc_cidr
-  kubernetes_version    = var.kubernetes_version
-  public_access_cidrs   = var.public_access_cidrs
-  identity_store_id     = local.identity_store_id
-  argocd_admin_group_id = aws_identitystore_group.argocd_admins.group_id
-  github_connection_arn = aws_codeconnections_connection.github.arn
-  gitops_repo_url       = local.gitops_repo_url
-  tags                  = local.tags
+  aws_region                   = var.aws_region
+  resource_prefix              = var.resource_prefix
+  environment                  = "platform"
+  vpc_cidr                     = var.vpc_cidr
+  kubernetes_version           = var.kubernetes_version
+  public_access_cidrs          = var.public_access_cidrs
+  identity_store_id            = local.identity_store_id
+  identity_center_instance_arn = local.identity_center_instance_arn
+  argocd_admin_group_id        = aws_identitystore_group.argocd_admins.group_id
+  github_connection_arn        = aws_codeconnections_connection.github.arn
+  gitops_repo_url              = local.gitops_repo_url
+  tags                         = local.tags
 }
