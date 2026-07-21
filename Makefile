@@ -1,4 +1,4 @@
-.PHONY: terraform-fmt terraform-validate terraform-lint terraform-check yaml-lint helm-check kustomize-check yaml-check
+.PHONY: terraform-fmt terraform-validate terraform-lint terraform-check yaml-lint helm-check kustomize-check yaml-check verify-prerequisites verify-platform check-drift
 
 TF_ROOTS := bootstrap/terraform-state environments/platform modules/platform_cluster modules/platform_cluster_bootstrap modules/ack_iam_role_selector
 
@@ -37,3 +37,12 @@ kustomize-check:
 	done
 
 yaml-check: yaml-lint helm-check kustomize-check
+
+verify-prerequisites:
+	./scripts/verify-prerequisites.sh
+
+verify-platform:
+	./scripts/verify-platform.sh
+
+check-drift:
+	./scripts/check-drift.sh

@@ -4,6 +4,8 @@
 
 Terraform and GitOps blueprint for a serverless Amazon EKS platform running exclusively on AWS Fargate.
 
+Run `make terraform-check` and `make yaml-check` for static validation. Use the scripts in `scripts/` and the runbooks in `docs/operations/` for deployment, acceptance, drift, and controlled destruction.
+
 > [!IMPORTANT]
 > This repository is currently in the design and planning phase. It contains an approved architecture specification and implementation plan; AWS infrastructure, GitOps manifests, and CI workflows have not been implemented yet.
 
