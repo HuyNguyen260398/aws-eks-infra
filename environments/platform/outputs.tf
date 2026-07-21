@@ -32,3 +32,38 @@ output "public_subnet_ids" {
   description = "IDs of the three public platform subnets."
   value       = module.platform_cluster.public_subnet_ids
 }
+
+output "cluster_name" {
+  description = "Name of the Amazon EKS platform cluster."
+  value       = module.platform_cluster.cluster_name
+}
+
+output "cluster_arn" {
+  description = "ARN of the Amazon EKS platform cluster."
+  value       = module.platform_cluster.cluster_arn
+}
+
+output "cluster_endpoint" {
+  description = "API endpoint of the Amazon EKS platform cluster."
+  value       = module.platform_cluster.cluster_endpoint
+}
+
+output "cluster_certificate_authority_data" {
+  description = "Base64-encoded certificate authority data for the Amazon EKS platform cluster."
+  value       = module.platform_cluster.cluster_certificate_authority_data
+}
+
+output "oidc_provider_arn" {
+  description = "ARN of the IAM OIDC provider used for EKS IRSA roles."
+  value       = module.platform_cluster.oidc_provider_arn
+}
+
+output "oidc_provider_url" {
+  description = "URL of the IAM OIDC provider used for EKS IRSA roles."
+  value       = module.platform_cluster.oidc_provider_url
+}
+
+output "fargate_profile_status" {
+  description = "Status of each Amazon EKS Fargate profile."
+  value       = module.platform_cluster.fargate_profile_status
+}
