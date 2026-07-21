@@ -54,3 +54,13 @@ output "fargate_profile_status" {
     for name, profile in module.eks.fargate_profiles : name => profile.fargate_profile_status
   }
 }
+
+output "fargate_log_group_name" {
+  description = "Name of the CloudWatch log group for Fargate application logs."
+  value       = aws_cloudwatch_log_group.fargate.name
+}
+
+output "adot_role_arn" {
+  description = "ARN of the IAM role used by the ADOT collector service account."
+  value       = aws_iam_role.adot.arn
+}
