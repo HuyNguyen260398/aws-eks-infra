@@ -51,6 +51,6 @@ output "oidc_provider_url" {
 output "fargate_profile_status" {
   description = "Status of each Amazon EKS Fargate profile."
   value = {
-    for name, profile in module.eks.fargate_profiles : name => profile.status
+    for name, profile in module.eks.fargate_profiles : name => profile.fargate_profile_status
   }
 }
