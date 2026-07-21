@@ -67,6 +67,28 @@ variable "github_repository" {
   }
 }
 
+variable "gitops_platform_path" {
+  description = "Repository path containing managed Argo CD platform configuration."
+  type        = string
+  default     = "gitops/platform/"
+
+  validation {
+    condition     = startswith(var.gitops_platform_path, "gitops/platform/") && endswith(var.gitops_platform_path, "/")
+    error_message = "gitops_platform_path must be rooted at gitops/platform/ and end with a slash."
+  }
+}
+
+variable "gitops_revision" {
+  description = "Git revision managed Argo CD reconciles for platform configuration."
+  type        = string
+  default     = "main"
+
+  validation {
+    condition     = length(trimspace(var.gitops_revision)) > 0
+    error_message = "gitops_revision must not be empty."
+  }
+}
+
 variable "argocd_admin_user_ids" {
   description = "Existing IAM Identity Center user IDs granted managed Argo CD administrator access."
   type        = set(string)

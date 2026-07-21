@@ -76,3 +76,21 @@ module "platform_cluster" {
   gitops_repo_url              = local.gitops_repo_url
   tags                         = local.tags
 }
+
+module "platform_cluster_bootstrap" {
+  source = "../../modules/platform_cluster_bootstrap"
+
+  cluster_name                          = module.platform_cluster.cluster_name
+  cluster_arn                           = module.platform_cluster.cluster_arn
+  environment                           = "platform"
+  gitops_repo_url                       = local.gitops_repo_url
+  gitops_platform_path                  = var.gitops_platform_path
+  gitops_revision                       = var.gitops_revision
+  vpc_id                                = module.platform_cluster.vpc_id
+  aws_region                            = var.aws_region
+  aws_load_balancer_controller_role_arn = ""
+  adot_role_arn                         = module.platform_cluster.adot_role_arn
+  fargate_log_group_name                = module.platform_cluster.fargate_log_group_name
+
+  depends_on = [module.platform_cluster]
+}
