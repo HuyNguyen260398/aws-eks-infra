@@ -65,6 +65,11 @@ output "adot_role_arn" {
   value       = aws_iam_role.adot.arn
 }
 
+output "aws_load_balancer_controller_role_arn" {
+  description = "ARN of the IAM role used by the AWS Load Balancer Controller service account."
+  value       = aws_iam_role.load_balancer_controller.arn
+}
+
 output "argocd_capability_arn" {
   description = "ARN of the managed Argo CD EKS capability."
   value       = aws_eks_capability.argocd.arn

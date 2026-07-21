@@ -88,7 +88,7 @@ module "platform_cluster_bootstrap" {
   gitops_revision                       = var.gitops_revision
   vpc_id                                = module.platform_cluster.vpc_id
   aws_region                            = var.aws_region
-  aws_load_balancer_controller_role_arn = ""
+  aws_load_balancer_controller_role_arn = module.platform_cluster.aws_load_balancer_controller_role_arn
   adot_role_arn                         = module.platform_cluster.adot_role_arn
   fargate_log_group_name                = module.platform_cluster.fargate_log_group_name
 
