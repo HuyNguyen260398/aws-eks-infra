@@ -18,8 +18,32 @@ spec:
         repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
         targetRevision: '{{ .metadata.annotations.gitops_revision }}'
         path: gitops/platform/config/observability
-        directory:
-          recurse: true
+        kustomize:
+          patches:
+            - target:
+                kind: ConfigMap
+                name: aws-logging
+                namespace: aws-observability
+              patch: |
+                - op: replace
+                  path: /data/output.conf
+                  value: |
+                    [OUTPUT]
+                        Name cloudwatch_logs
+                        Match   *
+                        region {{ .metadata.annotations.aws_region }}
+                        log_group_name {{ .metadata.annotations.fargate_log_group_name }}
+                        log_stream_prefix {{ .metadata.labels.cluster_name }}-
+                        auto_create_group false
+            - target:
+                kind: ServiceAccount
+                name: adot-collector
+                namespace: amazon-cloudwatch
+              patch: |
+                - op: add
+                  path: /metadata/annotations
+                  value:
+                    eks.amazonaws.com/role-arn: '{{ .metadata.annotations.adot_role_arn }}'
       destination:
         server: '{{ .server }}'
         namespace: argocd
