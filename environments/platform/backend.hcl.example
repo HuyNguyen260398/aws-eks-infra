@@ -1,0 +1,6 @@
+bucket       = "aws-eks-infra-ACCOUNT_ID-ap-southeast-1-tfstate"
+key          = "platform/terraform.tfstate"
+region       = "ap-southeast-1"
+encrypt      = true
+kms_key_id   = "arn:aws:kms:ap-southeast-1:ACCOUNT_ID:key/KEY_ID"
+use_lockfile = true
