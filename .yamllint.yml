@@ -5,6 +5,8 @@ ignore: |
 
 rules:
   document-start: disable
+  indentation:
+    indent-sequences: whatever
   line-length:
     max: 120
     level: warning

@@ -4,5 +4,7 @@ evaluate-variables: true
 framework:
   - terraform
 quiet: true
+skip-path:
+  - .external_modules
 skip-check:
   - CKV_TF_1
