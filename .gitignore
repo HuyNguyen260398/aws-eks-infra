@@ -4,6 +4,9 @@
 *.tfplan
 tfplan
 *.tflock
+# Child modules are validated with `init -backend=false`, which writes a lock
+# file. Only the deployable roots pin providers.
+modules/*/.terraform.lock.hcl
 backend.hcl
 terraform.tfvars
 override.tf
