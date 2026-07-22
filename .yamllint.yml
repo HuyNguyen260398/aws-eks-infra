@@ -2,6 +2,7 @@ extends: default
 
 ignore: |
   gitops/platform/charts/namespace-config/templates/
+  .terraform/
 
 rules:
   document-start: disable
