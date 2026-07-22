@@ -2,8 +2,6 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.0"
 
-  depends_on = [aws_cloudwatch_log_group.eks_control_plane]
-
   name                                     = local.cluster_name
   kubernetes_version                       = var.kubernetes_version
   authentication_mode                      = "API"
@@ -13,6 +11,9 @@ module "eks" {
   enable_irsa                              = true
   enable_cluster_creator_admin_permissions = true
   enabled_log_types                        = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+
+  cloudwatch_log_group_retention_in_days = 30
+  cloudwatch_log_group_kms_key_id        = aws_kms_key.observability.arn
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets

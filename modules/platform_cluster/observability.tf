@@ -53,14 +53,10 @@ resource "aws_kms_key" "observability" {
   tags = var.tags
 }
 
-resource "aws_cloudwatch_log_group" "eks_control_plane" {
-  #checkov:skip=CKV_AWS_338: The platform retention requirement is 30 days.
-  name              = "/aws/eks/${local.cluster_name}/cluster"
-  retention_in_days = 30
-  kms_key_id        = aws_kms_key.observability.arn
-
-  tags = var.tags
-}
+# The control-plane log group /aws/eks/<cluster>/cluster is created by the EKS
+# module itself, wired to aws_kms_key.observability in eks.tf. Declaring it here
+# as well would collide on the same AWS name, and ordering it with a module-level
+# depends_on defers every data source inside the EKS module to apply time.
 
 resource "aws_cloudwatch_log_group" "fargate" {
   #checkov:skip=CKV_AWS_338: The platform retention requirement is 30 days.
