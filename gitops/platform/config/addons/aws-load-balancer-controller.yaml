@@ -19,6 +19,10 @@ spec:
         chart: aws-load-balancer-controller
         targetRevision: 1.14.0
         helm:
+          # Argo CD defaults the release name to the Application name, which
+          # would prefix every rendered object with the cluster name. Pin it so
+          # object names stay deterministic and match the acceptance script.
+          releaseName: aws-load-balancer-controller
           values: |
             clusterName: '{{ .metadata.labels.cluster_name }}'
             region: '{{ .metadata.annotations.aws_region }}'
