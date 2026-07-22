@@ -2,7 +2,9 @@
 
 The `platform` root provisions a customer-managed KMS key and four CloudWatch Logs groups for EKS control-plane logs, Fargate application logs, Container Insights, and VPC Flow Logs. Each group retains logs for 30 days. The KMS policy permits only the account root and the regional CloudWatch Logs service, constrained to this platform's EKS and VPC Flow Log encryption contexts.
 
-Terraform also enables EKS API, audit, authenticator, controller-manager, and scheduler logging; publishes all VPC traffic to CloudWatch Logs at a one-minute aggregation interval; and installs the supported `adot` EKS add-on. The ADOT collector service account must be named `adot-collector` in the `amazon-cloudwatch` namespace so that it can assume the Terraform-managed IRSA role.
+Terraform also enables EKS API, audit, authenticator, controller-manager, and scheduler logging, and publishes all VPC traffic to CloudWatch Logs at a one-minute aggregation interval. The ADOT collector service account must be named `adot-collector` in the `amazon-cloudwatch` namespace so that it can assume the Terraform-managed IRSA role.
+
+Terraform does **not** install the `adot` EKS add-on. That add-on hard-requires cert-manager, which is a Kubernetes controller and therefore belongs to Argo CD under the ownership boundary. Wiring Terraform to wait for a GitOps-installed dependency would make the apply order circular. Argo CD installs cert-manager and then the OpenTelemetry operator from `gitops/platform/config/addons/`; Terraform owns only the ADOT IRSA role that the collector service account assumes.
 
 ## Prerequisites
 
@@ -31,7 +33,7 @@ aws logs describe-log-groups \
   --query "logGroups[].{name:logGroupName,kmsKeyId:kmsKeyId,retention:retentionInDays}"
 ```
 
-Each result must report the configured KMS key ARN and `30` days of retention. Verify Flow Logs, EKS control-plane logging, and the ADOT add-on:
+Each result must report the configured KMS key ARN and `30` days of retention. Verify Flow Logs and EKS control-plane logging:
 
 ```bash
 aws ec2 describe-flow-logs \
@@ -40,12 +42,15 @@ aws ec2 describe-flow-logs \
 aws eks describe-cluster \
   --name "$CLUSTER_NAME" \
   --query "cluster.logging.clusterLogging[?enabled].types[]"
-aws eks describe-addon \
-  --cluster-name "$CLUSTER_NAME" \
-  --addon-name adot \
-  --query "addon.status"
 ```
 
-The Flow Log status must be `ACTIVE`, traffic type must be `ALL`, and aggregation interval must be `60`. The enabled EKS types must include `api`, `audit`, `authenticator`, `controllerManager`, and `scheduler`; the ADOT add-on must report `ACTIVE`.
+The Flow Log status must be `ACTIVE`, traffic type must be `ALL`, and aggregation interval must be `60`. The enabled EKS types must include `api`, `audit`, `authenticator`, `controllerManager`, and `scheduler`.
+
+The OpenTelemetry operator is verified in the cluster rather than through the add-on API:
+
+```bash
+kubectl -n cert-manager rollout status deployment/cert-manager-webhook
+kubectl -n opentelemetry-operator-system rollout status deployment/opentelemetry-operator
+```
 
 Do not install `amazon-cloudwatch-observability` or Network Flow Monitor agent add-ons. They are not supported on this Fargate-only platform. Configure the in-cluster ADOT collector and Fargate log-routing ConfigMap through GitOps; Terraform owns only the AWS resources in this document.

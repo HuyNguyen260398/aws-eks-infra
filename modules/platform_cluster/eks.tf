@@ -22,14 +22,27 @@ module "eks" {
     enabled = false
   }
 
+  # CoreDNS must be created *after* the Fargate profiles. before_compute = true
+  # is for node-based clusters; on a Fargate-only cluster it schedules CoreDNS
+  # while no profile selects kube-system, so the add-on sits DEGRADED until it
+  # times out. The ADOT add-on is deliberately absent: it hard-requires
+  # cert-manager, so Argo CD installs cert-manager and the OpenTelemetry
+  # operator instead. Terraform still owns the ADOT IRSA role.
   addons = {
     coredns = {
-      before_compute = true
       configuration_values = jsonencode({
         computeType = "Fargate"
       })
+      # EKS creates the default CoreDNS Deployment when the cluster is created,
+      # before any Fargate profile exists, so those first Pods are permanently
+      # unschedulable and the add-on reports DEGRADED. Clearing it needs a
+      # `kubectl -n kube-system rollout restart deployment coredns` once the
+      # kube-system profile is ACTIVE — see docs/operations/deploy-platform.md.
+      # The default 20m create timeout leaves no room for that manual step.
+      timeouts = {
+        create = "40m"
+      }
     }
-    adot = {}
   }
 
   fargate_profiles = {
@@ -47,6 +60,7 @@ module "eks" {
       iam_role_arn    = aws_iam_role.fargate_pod_execution.arn
       selectors = [
         { namespace = "argo-rollouts" },
+        { namespace = "cert-manager" },
         { namespace = "opentelemetry-operator-system" },
         { namespace = "amazon-cloudwatch" },
       ]

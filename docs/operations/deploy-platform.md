@@ -90,9 +90,32 @@ terraform -chdir=environments/platform plan -target=module.platform_cluster -out
 terraform -chdir=environments/platform apply tfplan
 ```
 
-Review the saved plan before applying. On a first deployment it creates roughly 80 resources: one VPC with six subnets across three AZs and one NAT gateway, the EKS cluster, three Fargate profiles, two KMS keys, four CloudWatch log groups, VPC Flow Logs, the CoreDNS and ADOT add-ons, IRSA roles, and the three EKS capabilities. Terraform prints a `Resource targeting is in effect` warning; that is expected here.
+Review the saved plan before applying. On a first deployment it creates roughly 80 resources: one VPC with six subnets across three AZs and one NAT gateway, the EKS cluster, three Fargate profiles, two KMS keys, four CloudWatch log groups, VPC Flow Logs, the CoreDNS add-on, IRSA roles, and the three EKS capabilities. Terraform prints a `Resource targeting is in effect` warning; that is expected here.
 
 Expect 20–30 minutes, most of it the EKS control plane and the capabilities.
+
+### CoreDNS needs one manual restart
+
+**This step is required on every new cluster, and the apply blocks until you do it.**
+
+EKS creates the default CoreDNS Deployment when the cluster is created — before Terraform has made any Fargate profile. Those first Pods match no profile, so they stay `Pending` forever with **no scheduling events**, and Fargate never re-evaluates an already-pending Pod. The CoreDNS add-on therefore reports `DEGRADED`, and `aws_eks_addon` blocks waiting for `ACTIVE`.
+
+While the apply is still running, once the `system` Fargate profile is `ACTIVE`, open a second shell and run:
+
+```bash
+aws eks update-kubeconfig --name "$cluster" --region "$AWS_REGION"
+kubectl -n kube-system rollout restart deployment coredns
+kubectl -n kube-system rollout status deployment/coredns --timeout=5m
+```
+
+Expected: two new Pods `1/1 Running` on `fargate-ip-*` nodes, and the add-on reaching `ACTIVE` within a couple of minutes — add-on health lags the Pods, so `DEGRADED` immediately after a successful rollout is normal.
+
+The add-on's create timeout is set to 40m in `modules/platform_cluster/eks.tf` to leave room for this. If the apply still times out, the add-on usually goes `ACTIVE` shortly after; verify with `aws eks describe-addon`, clear the failed-create marker, and re-plan to confirm convergence rather than replacing healthy DNS:
+
+```bash
+terraform -chdir=environments/platform untaint 'module.platform_cluster.module.eks.aws_eks_addon.this["coredns"]'
+terraform -chdir=environments/platform plan -target=module.platform_cluster -detailed-exitcode   # expect 0
+```
 
 Gate — no EC2 compute anywhere:
 

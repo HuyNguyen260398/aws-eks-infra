@@ -26,7 +26,7 @@ A Terraform root is only validated if it contains `versions.tf` — the Makefile
 - CodeConnections `AVAILABLE`, EKS and all Fargate profiles `ACTIVE`
 - `aws eks list-nodegroups` empty — the Fargate-only invariant
 - Argo CD, ACK, and kro capabilities `ACTIVE`
-- CoreDNS, AWS Load Balancer Controller, Argo Rollouts, and the ADOT operator available
+- CoreDNS, AWS Load Balancer Controller, Argo Rollouts, cert-manager, and the OpenTelemetry operator available
 - every Argo CD Application `Synced` and `Healthy`
 - no `apps-*` workload, no Ingress, no LoadBalancer Service
 

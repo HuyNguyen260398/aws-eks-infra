@@ -3,3 +3,5 @@ kind: Kustomization
 resources:
   - aws-load-balancer-controller.yaml
   - argo-rollouts.yaml
+  - cert-manager.yaml
+  - opentelemetry-operator.yaml
