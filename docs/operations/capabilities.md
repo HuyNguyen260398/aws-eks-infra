@@ -6,9 +6,11 @@ The platform Terraform root creates AWS-managed Argo CD, ACK, and kro capabiliti
 
 Complete the GitHub CodeConnections authorization described in [GitHub CodeConnections](github-connection.md) before applying. Initialize and apply the platform root using its local, ignored backend and variable files.
 
+Capabilities belong to `module.platform_cluster`, which is applied on its own before the Argo CD bootstrap. The untargeted root cannot be planned until the Argo CD capability is `ACTIVE` and its `ApplicationSet` CRD exists — [deploy the platform](deploy-platform.md#why-the-apply-is-staged) explains why, and is the authoritative sequence.
+
 ```bash
 terraform -chdir=environments/platform init -backend-config=backend.hcl
-terraform -chdir=environments/platform plan -out=tfplan
+terraform -chdir=environments/platform plan -target=module.platform_cluster -out=tfplan
 terraform -chdir=environments/platform apply tfplan
 ```
 
