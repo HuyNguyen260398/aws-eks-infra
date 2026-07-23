@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-kro-definitions
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform_cluster: "true"
+  template:
+    metadata:
+      name: '{{ .name }}-platform-kro-definitions'
+    spec:
+      project: default
+      source:
+        repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
+        targetRevision: '{{ .metadata.annotations.gitops_revision }}'
+        path: gitops/platform/config/kro-definitions
+        directory:
+          recurse: true
+      destination:
+        server: '{{ .server }}'
+        namespace: argocd
+      syncPolicy:
+        automated:
+          allowEmpty: true
+        syncOptions:
+          - ServerSideApply=true

@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: opentelemetry-operator
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform_cluster: "true"
+  template:
+    metadata:
+      name: '{{ .name }}-opentelemetry-operator'
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: default
+      source:
+        repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+        chart: opentelemetry-operator
+        targetRevision: 0.120.0
+        helm:
+          releaseName: opentelemetry-operator
+          values: |
+            manager:
+              collectorImage:
+                repository: public.ecr.aws/aws-observability/aws-otel-collector
+            replicaCount: 1
+      destination:
+        server: '{{ .server }}'
+        namespace: opentelemetry-operator-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
+        # cert-manager's webhook is a separate Application, so it may not be
+        # serving yet on the first attempt. Retry rather than sit Degraded.
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m

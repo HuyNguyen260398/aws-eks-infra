@@ -1,48 +1,18 @@
-# Terraform working directories and state
 **/.terraform/*
 *.tfstate
 *.tfstate.*
-*.tflock
-
-# Terraform plans and crash logs
 *.tfplan
-*tfplan*
-crash.log
-crash.*.log
-
-# Local Terraform configuration and sensitive values
+tfplan
+*.tflock
+# Child modules are validated with `init -backend=false`, which writes a lock
+# file. Only the deployable roots pin providers.
+modules/*/.terraform.lock.hcl
 backend.hcl
-*.tfvars
-*.tfvars.json
-!*.tfvars.example
-!*.tfvars.json.example
-.terraformrc
-terraform.rc
+terraform.tfvars
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
-
-# Environment files and credentials
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-kubeconfig
-kubeconfig.*
-
-# Editors and operating systems
+.DS_Store
 .idea/
 .vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-
-# Temporary files
-.cache/
-tmp/
-*.tmp

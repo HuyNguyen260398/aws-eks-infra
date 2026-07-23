@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform_cluster: "true"
+  template:
+    metadata:
+      name: '{{ .name }}-cert-manager'
+      annotations:
+        # Must be established before the OpenTelemetry operator, which issues
+        # its webhook certificates through cert-manager.
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      project: default
+      source:
+        repoURL: https://charts.jetstack.io
+        chart: cert-manager
+        targetRevision: v1.21.0
+        helm:
+          releaseName: cert-manager
+          values: |
+            crds:
+              enabled: true
+            # Fargate gives every Pod its own node, so a single replica per
+            # component is the cheapest layout that still satisfies the
+            # operator's webhook dependency.
+            replicaCount: 1
+            webhook:
+              replicaCount: 1
+            cainjector:
+              replicaCount: 1
+      destination:
+        server: '{{ .server }}'
+        namespace: cert-manager
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true

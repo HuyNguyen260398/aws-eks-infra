@@ -4,12 +4,11 @@
 
 Terraform and GitOps blueprint for a serverless Amazon EKS platform running exclusively on AWS Fargate.
 
-> [!IMPORTANT]
-> This repository is currently in the design and planning phase. It contains an approved architecture specification and implementation plan; AWS infrastructure, GitOps manifests, and CI workflows have not been implemented yet.
+Run `make terraform-check` and `make yaml-check` for static validation. Use the scripts in `scripts/` and the runbooks in `docs/operations/` for deployment, acceptance, drift, and controlled destruction.
 
 ## Overview
 
-The platform is designed to provide one environment named `platform` with:
+The repository provides one environment named `platform` with:
 
 - A three-Availability-Zone VPC and private Fargate scheduling.
 - Amazon EKS with no EC2 node groups, Auto Mode, or Karpenter.
@@ -20,7 +19,7 @@ The platform is designed to provide one environment named `platform` with:
 
 Application deployments and post-parity architecture improvements are intentionally handled by separate future plans.
 
-## Target Architecture
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -47,23 +46,27 @@ Terraform owns customer-controlled AWS resources and the minimum Argo CD bootstr
 | Observability | CloudWatch Logs, VPC Flow Logs, ADOT |
 | Quality | TFLint, Checkov, yamllint, Helm, Kustomize, kubeconform |
 
-## Planned Repository Structure
+## Repository Structure
 
 ```text
-bootstrap/terraform-state/       Remote-state foundation
-environments/platform/          Single deployable Terraform root
-modules/                        Reusable platform modules
-gitops/platform/                Argo CD-managed platform configuration
-gitops/workloads/               Future service manifests
-scripts/                        Validation and operational helpers
-docs/operations/                Deployment and recovery runbooks
-docs/superpowers/specs/         Approved architecture specifications
-docs/superpowers/plans/         Step-by-step implementation plans
+bootstrap/terraform-state/           Remote-state foundation
+environments/platform/              Single deployable Terraform root
+modules/platform_cluster/           VPC, EKS, Fargate profiles, capabilities, IAM, observability
+modules/platform_cluster_bootstrap/ Terraform-to-Argo CD handoff objects
+modules/ack_iam_role_selector/      Namespace-scoped IAM roles for ACK
+gitops/platform/bootstrap/          ApplicationSets Argo CD reconciles first
+gitops/platform/config/             Addons, observability, and kro definitions
+gitops/platform/charts/             Platform Helm charts
+gitops/workloads/                   Future service manifests
+scripts/                            Validation and operational helpers
+docs/operations/                    Deployment and recovery runbooks
+docs/superpowers/specs/             Approved architecture specifications
+docs/superpowers/plans/             Step-by-step implementation plans
 ```
 
 ## Prerequisites
 
-Implementation will require:
+Deployment requires:
 
 - An AWS account and configured AWS CLI profile.
 - An existing IAM Identity Center instance and user IDs for Argo CD administrators.
@@ -74,20 +77,29 @@ Implementation will require:
 > [!CAUTION]
 > Never commit Terraform state, saved plans, backend configuration, variable files containing account data, credentials, or private keys.
 
-## Implementation
+## Deployment
 
-Follow the documents in this order:
+1. Run `./scripts/verify-prerequisites.sh` to confirm tooling and AWS account preconditions.
+2. Apply and migrate the state foundation as described in [Terraform state](docs/operations/terraform-state.md).
+3. Apply `environments/platform` and authorize the GitHub connection, following [deploy the platform](docs/operations/deploy-platform.md) and [GitHub CodeConnections](docs/operations/github-connection.md).
+4. Wait for all three capabilities to report `ACTIVE` per [managed EKS capabilities](docs/operations/capabilities.md), then configure access with [cluster access](docs/operations/cluster-access.md).
+5. Run `./scripts/verify-platform.sh` as acceptance, and `./scripts/check-drift.sh` on an ongoing basis.
 
-1. Review the [architecture design](docs/superpowers/specs/2026-07-18-eks-fargate-platform-recreation-design.md).
-2. Execute the [start-from-scratch implementation plan](docs/superpowers/plans/2026-07-18-eks-fargate-platform-recreation.md) task by task.
-3. Run each task's validation commands before creating its Conventional Commit.
-4. Deploy services only through separately approved service plans after platform acceptance passes.
+Deploy services only through separately approved service plans after platform acceptance passes. [Destroying the platform](docs/operations/destroy-platform.md) is a deliberate, guarded procedure.
 
-When the planned Make targets exist, run:
+## Validation
 
 ```bash
 make terraform-check
 make yaml-check
 ```
 
-These commands will remain local and CI quality gates; pull-request workflows will not receive AWS credentials or apply infrastructure.
+These are the local and CI quality gates. The `terraform-ci` and `yaml-ci` workflows run the same checks with pinned tool versions; pull-request workflows do not receive AWS credentials and never apply infrastructure. Adding a Terraform root requires updating both `TF_ROOTS` in the `Makefile` and the root list in `.github/workflows/terraform-ci.yaml`.
+
+## Background
+
+The [architecture design](docs/superpowers/specs/2026-07-18-eks-fargate-platform-recreation-design.md) and the [implementation plan](docs/superpowers/plans/2026-07-18-eks-fargate-platform-recreation.md) record the approved decisions this platform was built from.
+
+## GitHub Protection
+
+After the `terraform-ci` and `yaml-ci` workflows have each passed once on `main`, configure a GitHub ruleset for `main` that requires both checks, requires pull requests, and blocks force pushes. This one-time GitHub setting is intentionally not managed through Terraform.

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-logging
+  namespace: aws-observability
+data:
+  output.conf: |
+    [OUTPUT]
+        Name cloudwatch_logs
+        Match   *
+        region ${AWS_REGION}
+        log_group_name ${FARGATE_LOG_GROUP_NAME}
+        log_stream_prefix ${CLUSTER_NAME}-
+        auto_create_group false

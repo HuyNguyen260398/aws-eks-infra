@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform_cluster: "true"
+  template:
+    metadata:
+      name: '{{ .name }}-aws-load-balancer-controller'
+    spec:
+      project: default
+      source:
+        repoURL: https://aws.github.io/eks-charts
+        chart: aws-load-balancer-controller
+        targetRevision: 1.14.0
+        helm:
+          # Argo CD defaults the release name to the Application name, which
+          # would prefix every rendered object with the cluster name. Pin it so
+          # object names stay deterministic and match the acceptance script.
+          releaseName: aws-load-balancer-controller
+          values: |
+            clusterName: '{{ .metadata.labels.cluster_name }}'
+            region: '{{ .metadata.annotations.aws_region }}'
+            vpcId: '{{ .metadata.annotations.vpc_id }}'
+            replicaCount: 2
+            serviceAccount:
+              create: true
+              name: aws-load-balancer-controller
+              annotations:
+                eks.amazonaws.com/role-arn: '{{ .metadata.annotations.aws_load_balancer_controller_role_arn }}'
+      destination:
+        server: '{{ .server }}'
+        namespace: kube-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
