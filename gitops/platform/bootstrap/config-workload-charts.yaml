@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: platform-workloads
+  name: platform-workload-charts
   namespace: argocd
 spec:
   generators:
@@ -11,13 +11,13 @@ spec:
             workload_cluster: "true"
   template:
     metadata:
-      name: '{{ .name }}-platform-workloads'
+      name: '{{ .name }}-platform-workload-charts'
     spec:
       project: default
       source:
         repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
         targetRevision: '{{ .metadata.annotations.gitops_revision }}'
-        path: gitops/workloads/manifests
+        path: gitops/workloads/config/charts
         directory:
           recurse: true
       destination:

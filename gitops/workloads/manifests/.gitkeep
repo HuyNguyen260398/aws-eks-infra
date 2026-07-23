@@ -1,0 +1,3 @@
+# Plain-manifest / kustomize workloads reconciled by the platform-workloads
+# ApplicationSet live here. Helm-chart workloads use gitops/workloads/charts
+# plus an ApplicationSet under gitops/workloads/config/charts instead.

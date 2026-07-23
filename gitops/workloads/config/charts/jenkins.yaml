@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: jenkins
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            workload_cluster: "true"
+  template:
+    metadata:
+      name: '{{ .name }}-jenkins'
+    spec:
+      project: default
+      sources:
+        - repoURL: https://charts.jenkins.io
+          chart: jenkins
+          targetRevision: "5.9.42"
+          helm:
+            # Pin the release name so rendered object names stay deterministic.
+            releaseName: jenkins
+            values: |
+              controller:
+                serviceType: ClusterIP
+                jenkinsUrlProtocol: http
+                resources:
+                  requests:
+                    cpu: "1000m"
+                    memory: "2Gi"
+                  limits:
+                    cpu: "2000m"
+                    memory: "4Gi"
+                podSecurityContextOverride:
+                  runAsUser: 1000
+                  runAsGroup: 1000
+                  fsGroup: 1000
+                  runAsNonRoot: true
+                ingress:
+                  enabled: true
+                  ingressClassName: alb
+                  annotations:
+                    alb.ingress.kubernetes.io/scheme: internal
+                    alb.ingress.kubernetes.io/target-type: ip
+                    alb.ingress.kubernetes.io/healthcheck-path: /login
+                    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+                persistence:
+                  enabled: true
+                  existingClaim: jenkins-home
+              agent:
+                enabled: true
+                namespace: apps-jenkins
+                resources:
+                  requests:
+                    cpu: "500m"
+                    memory: "512Mi"
+                  limits:
+                    cpu: "1000m"
+                    memory: "1Gi"
+              rbac:
+                create: true
+              serviceAccount:
+                create: true
+                name: jenkins
+              serviceAccountAgent:
+                create: true
+                name: jenkins-agent
+        - repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
+          targetRevision: '{{ .metadata.annotations.gitops_revision }}'
+          path: gitops/workloads/charts/jenkins-storage
+          helm:
+            releaseName: jenkins-storage
+            values: |
+              fileSystemId: '{{ .metadata.annotations.efs_file_system_id }}'
+              accessPointId: '{{ .metadata.annotations.jenkins_efs_access_point_id }}'
+              namespace: apps-jenkins
+      destination:
+        server: '{{ .server }}'
+        namespace: apps-jenkins
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
