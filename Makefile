@@ -29,6 +29,11 @@ helm-check:
 		helm template namespace-config gitops/platform/charts/namespace-config -f gitops/platform/charts/namespace-config/values-test.yaml > /tmp/namespace-config-rendered.yaml; \
 		kubeconform -strict -summary -ignore-missing-schemas /tmp/namespace-config-rendered.yaml; \
 	fi
+	@if [ -f gitops/workloads/charts/jenkins-storage/Chart.yaml ]; then \
+		helm lint gitops/workloads/charts/jenkins-storage -f gitops/workloads/charts/jenkins-storage/values-test.yaml; \
+		helm template jenkins-storage gitops/workloads/charts/jenkins-storage -f gitops/workloads/charts/jenkins-storage/values-test.yaml > /tmp/jenkins-storage-rendered.yaml; \
+		kubeconform -strict -summary -ignore-missing-schemas /tmp/jenkins-storage-rendered.yaml; \
+	fi
 
 kustomize-check:
 	@find gitops -name kustomization.yaml -print0 | while IFS= read -r -d '' file; do \

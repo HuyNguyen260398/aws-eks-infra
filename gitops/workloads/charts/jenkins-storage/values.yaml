@@ -1,0 +1,15 @@
+# EFS filesystem ID backing the Jenkins PersistentVolume. Injected by the
+# Jenkins ApplicationSet from the platform-cluster Secret annotations.
+fileSystemId: ""
+# EFS access point ID scoping the volume to /jenkins-home.
+accessPointId: ""
+# Namespace for the PersistentVolumeClaim (the PV and StorageClass are cluster-scoped).
+namespace: apps-jenkins
+# Name of the StorageClass referenced by the PV and PVC.
+storageClassName: efs-sc
+# Name of the static PersistentVolume.
+pvName: jenkins-home-pv
+# Name of the PersistentVolumeClaim the Jenkins chart mounts as JENKINS_HOME.
+claimName: jenkins-home
+# Nominal capacity. EFS is elastic and ignores this value; Kubernetes requires it.
+capacity: 20Gi
