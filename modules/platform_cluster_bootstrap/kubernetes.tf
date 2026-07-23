@@ -18,6 +18,8 @@ resource "kubernetes_secret_v1" "platform_cluster" {
       aws_load_balancer_controller_role_arn = var.aws_load_balancer_controller_role_arn
       adot_role_arn                         = var.adot_role_arn
       fargate_log_group_name                = var.fargate_log_group_name
+      efs_file_system_id                    = var.efs_file_system_id
+      jenkins_efs_access_point_id           = var.jenkins_efs_access_point_id
     }
   }
 
