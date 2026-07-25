@@ -89,3 +89,13 @@ output "argocd_capability_role_name" {
   description = "Name of the IAM role assumed by the managed Argo CD capability."
   value       = aws_iam_role.argocd_capability.name
 }
+
+output "efs_file_system_id" {
+  description = "ID of the EFS filesystem backing platform application storage."
+  value       = aws_efs_file_system.apps.id
+}
+
+output "jenkins_efs_access_point_id" {
+  description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
+  value       = aws_efs_access_point.jenkins.id
+}

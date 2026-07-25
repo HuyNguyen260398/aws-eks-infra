@@ -52,3 +52,13 @@ variable "fargate_log_group_name" {
   description = "CloudWatch log group receiving Fargate container logs."
   type        = string
 }
+
+variable "efs_file_system_id" {
+  description = "ID of the EFS filesystem backing platform application storage."
+  type        = string
+}
+
+variable "jenkins_efs_access_point_id" {
+  description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
+  type        = string
+}
