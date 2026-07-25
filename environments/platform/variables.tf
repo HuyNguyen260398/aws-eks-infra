@@ -98,3 +98,21 @@ variable "argocd_admin_user_ids" {
     error_message = "argocd_admin_user_ids must contain at least one IAM Identity Center user ID."
   }
 }
+
+variable "jenkins_public_hostname" {
+  description = "Public DNS name for the Jenkins Ingress, e.g. jenkins.example.com. Empty disables public HTTPS exposure."
+  type        = string
+  default     = ""
+}
+
+variable "route53_hosted_zone_name" {
+  description = "Public Route 53 hosted zone containing jenkins_public_hostname. Required when jenkins_public_hostname is set."
+  type        = string
+  default     = ""
+}
+
+variable "jenkins_dns_record_enabled" {
+  description = "Create the Route 53 alias record for Jenkins. Enable only after the Ingress has created the ALB."
+  type        = bool
+  default     = false
+}

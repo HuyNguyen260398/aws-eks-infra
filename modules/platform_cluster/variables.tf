@@ -62,3 +62,32 @@ variable "tags" {
   description = "Tags applied to platform cluster resources."
   type        = map(string)
 }
+
+variable "jenkins_public_hostname" {
+  description = "Public DNS name for the Jenkins Ingress, e.g. jenkins.example.com. Empty disables public HTTPS exposure."
+  type        = string
+  default     = ""
+}
+
+variable "route53_hosted_zone_name" {
+  description = "Public Route 53 hosted zone containing jenkins_public_hostname. Required when jenkins_public_hostname is set."
+  type        = string
+  default     = ""
+}
+
+variable "jenkins_alb_name" {
+  description = "Pinned name of the Jenkins ALB, matching alb.ingress.kubernetes.io/load-balancer-name on the Ingress."
+  type        = string
+  default     = "aws-eks-infra-jenkins"
+
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9-]{1,32}$", var.jenkins_alb_name))
+    error_message = "jenkins_alb_name must be 1-32 alphanumeric or hyphen characters."
+  }
+}
+
+variable "jenkins_dns_record_enabled" {
+  description = "Create the Route 53 alias record for Jenkins. Enable only after the Ingress has created the ALB; see docs/operations/public-workload-access.md."
+  type        = bool
+  default     = false
+}

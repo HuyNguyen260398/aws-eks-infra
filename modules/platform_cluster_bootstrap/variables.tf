@@ -62,3 +62,21 @@ variable "jenkins_efs_access_point_id" {
   description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
   type        = string
 }
+
+variable "jenkins_certificate_arn" {
+  description = "ARN of the ACM certificate terminating TLS on the Jenkins ALB. Empty when public exposure is disabled."
+  type        = string
+  default     = ""
+}
+
+variable "jenkins_public_hostname" {
+  description = "Public DNS name serving Jenkins. Empty when public exposure is disabled."
+  type        = string
+  default     = ""
+}
+
+variable "jenkins_alb_name" {
+  description = "Pinned name for the Jenkins ALB so the Route 53 alias lookup in Terraform is deterministic."
+  type        = string
+  default     = "aws-eks-infra-jenkins"
+}

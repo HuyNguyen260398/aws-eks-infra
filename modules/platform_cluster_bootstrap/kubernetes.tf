@@ -20,6 +20,9 @@ resource "kubernetes_secret_v1" "platform_cluster" {
       fargate_log_group_name                = var.fargate_log_group_name
       efs_file_system_id                    = var.efs_file_system_id
       jenkins_efs_access_point_id           = var.jenkins_efs_access_point_id
+      jenkins_certificate_arn               = var.jenkins_certificate_arn
+      jenkins_public_hostname               = var.jenkins_public_hostname
+      jenkins_alb_name                      = var.jenkins_alb_name
     }
   }
 

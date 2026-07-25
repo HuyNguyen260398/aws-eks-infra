@@ -99,3 +99,13 @@ output "jenkins_efs_access_point_id" {
   description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
   value       = aws_efs_access_point.jenkins.id
 }
+
+output "jenkins_certificate_arn" {
+  description = "ARN of the validated ACM certificate for the Jenkins public hostname. Empty when public exposure is disabled."
+  value       = local.jenkins_public_enabled ? aws_acm_certificate_validation.jenkins[0].certificate_arn : ""
+}
+
+output "jenkins_public_hostname" {
+  description = "Public DNS name serving Jenkins. Empty when public exposure is disabled."
+  value       = var.jenkins_public_hostname
+}
