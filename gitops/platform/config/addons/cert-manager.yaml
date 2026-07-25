@@ -40,6 +40,13 @@ spec:
             replicaCount: 1
             webhook:
               replicaCount: 1
+              # Fargate gives every Pod the node's own IP and runs the kubelet
+              # on 10250, so the API server's webhook call to <podIP>:10250
+              # reaches the kubelet instead of cert-manager and is rejected:
+              #   x509: certificate is valid for fargate-ip-10-0-4-117...,
+              #   not cert-manager-webhook.cert-manager.svc
+              # Move the webhook off the kubelet's port.
+              securePort: 10260
             cainjector:
               replicaCount: 1
       destination:
