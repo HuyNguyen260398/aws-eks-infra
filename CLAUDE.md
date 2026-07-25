@@ -11,6 +11,7 @@ Terraform + GitOps blueprint for a single Amazon EKS platform (`environments/pla
 ```bash
 make terraform-check      # fmt -check + validate every root + tflint + checkov  (run for any .tf change)
 make yaml-check           # yamllint + helm lint/template + kubeconform + kustomize build  (run for any gitops/ change)
+make shell-check          # shellcheck at default severity  (run for any scripts/ change)
 ```
 
 Sub-targets when you need a narrower loop: `terraform-fmt`, `terraform-validate`, `terraform-lint`, `yaml-lint`, `helm-check`, `kustomize-check`.

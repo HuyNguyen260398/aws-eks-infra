@@ -1,0 +1,47 @@
+name: shell-ci
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "Makefile"
+      - ".github/workflows/shell-ci.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "Makefile"
+      - ".github/workflows/shell-ci.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shell-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shell-ci:
+    name: shell-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install shellcheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz \
+            --output /tmp/shellcheck.tar.xz
+          tar -xJf /tmp/shellcheck.tar.xz -C /tmp
+          sudo install /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
+          shellcheck --version
+      - name: Check shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
+      - name: Lint shell scripts
+        run: make shell-check
