@@ -391,10 +391,38 @@ not synced yet.
 
 ## Tooling and runbook inaccuracies
 
-These are not code defects but were observed during the same deployment and are
-still unfixed.
+These are not code defects in the platform, but they made the tooling unusable as
+a gate. All but the last are now fixed; each entry records the original symptom
+and what changed.
 
-### `scripts/check-drift.sh` reports a false failure
+### `scripts/destroy-platform.sh` guard missed multi-source workloads — FIXED
+
+The guard refused only when an Application had
+`.spec.source.path == "gitops/workloads"`. Jenkins is a **multi-source**
+Application, so `.spec.source` is null and its paths live in `.spec.sources[]`.
+The guard reported **0 workloads** with Jenkins fully live, and would have let the
+destroy run straight into an orphaned ALB blocking the VPC destroy.
+
+It now checks `.spec.source.path` *and* every `.spec.sources[].path`, matches on
+the `gitops/workloads` prefix rather than an exact string, and additionally
+refuses while any Ingress or LoadBalancer Service exists — those are backed by
+load balancers Terraform has no record of. The guards are skipped only when the
+cluster is absent from state, and a cluster in state that `kubectl` cannot reach
+is now a refusal rather than a silent pass.
+
+### `scripts/destroy-platform.sh` destroyed more than the cluster — FIXED
+
+Its final step was an untargeted `plan -destroy`, which also removed the
+CodeConnections connection and the Identity Center group, forcing a manual GitHub
+App reauthorization on the next deploy.
+
+It now destroys `module.platform_cluster_bootstrap` and `module.platform_cluster`
+by target and preserves those account-level resources. `DESTROY_ROOT=true` opts
+into the full root destroy. It also forces
+`-var jenkins_dns_record_enabled=false`, because the Route 53 alias reads the ALB
+through a data source that fails the plan once the load balancer is gone.
+
+### `scripts/check-drift.sh` reported a false failure — FIXED
 
 It prints `FAIL drift in bootstrap/terraform-state` while Terraform reports the
 opposite:
@@ -410,26 +438,33 @@ your most recent changes, and found no differences.
 script gates on `[ "$code" = 0 ]`. Reproducible on **both** roots, including
 `bootstrap/terraform-state`, which this deployment never modified.
 
-Until it is fixed, use the plain plan as the drift signal:
+It no longer gates on the exit code. It inspects the JSON plan for
+`resource_drift` (changed outside Terraform) and `resource_changes` with actions
+other than `no-op`/`read` (state diverged from configuration), prints the
+offending addresses, and checks both roots so one drifting root cannot mask the
+other.
 
-```bash
-terraform -chdir=environments/platform plan -input=false
-# "No changes. Your infrastructure matches the configuration."
-```
+### `scripts/verify-platform.sh` was a pre-workload-only gate — FIXED
 
-### `scripts/verify-platform.sh` is a pre-workload gate
-
-Two assertions encode the platform's pre-workload non-goals and **now fail by
-design** with Jenkins deployed:
+Two assertions encoded the platform's pre-workload non-goals and began failing
+**by design** as soon as Jenkins ran:
 
 - `No service workloads` — asserts zero Pods in `apps-*` namespaces
-- `No Ingress` — Jenkins creates an internal ALB Ingress
+- `No Ingress` — Jenkins creates an ALB Ingress
 
-`No LoadBalancer Service` still passes: the controller Service is `ClusterIP`
-behind an ALB Ingress. The script needs splitting into platform assertions and
-workload assertions.
+(`No LoadBalancer Service` kept passing: the controller Service is `ClusterIP`
+behind an ALB Ingress.)
 
-### `docs/operations/deploy-platform.md`: the CoreDNS restart was not required
+Assertions are now split. Platform invariants always run; the non-goals run only
+when `EXPECT_WORKLOADS=false`, the default. With `EXPECT_WORKLOADS=true` they are
+replaced by positive checks — Pods confined to `apps-*` or platform namespaces,
+`apps-*` Pods `Running`, every Ingress carrying a load balancer address. Two
+weaknesses found while splitting it were also fixed: the Application health check
+passed vacuously against an empty `argocd` namespace (`all` on an empty array is
+true), and `list-nodegroups` alone cannot detect self-managed EC2 capacity, so
+every node is now asserted to be `eks.amazonaws.com/compute-type=fargate`.
+
+### `docs/operations/deploy-platform.md`: the CoreDNS restart was not required — STILL OPEN
 
 The runbook states the manual CoreDNS restart "is required on every new cluster,
 and the apply blocks until you do it." On this deployment it was **not** needed —
