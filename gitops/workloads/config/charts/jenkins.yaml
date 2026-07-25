@@ -31,7 +31,10 @@ spec:
             values: |
               controller:
                 serviceType: ClusterIP
-                jenkinsUrlProtocol: http
+                jenkinsUrlProtocol: https
+                # Absolute URL so links, webhooks and the agent JNLP handshake
+                # all reference the public name rather than the ALB hostname.
+                jenkinsUrl: 'https://{{ .metadata.annotations.jenkins_public_hostname }}'
                 resources:
                   requests:
                     cpu: "1000m"
@@ -47,11 +50,20 @@ spec:
                 ingress:
                   enabled: true
                   ingressClassName: alb
+                  hostName: '{{ .metadata.annotations.jenkins_public_hostname }}'
                   annotations:
-                    alb.ingress.kubernetes.io/scheme: internal
+                    # internet-facing requires the public subnets to carry
+                    # kubernetes.io/role/elb=1, which vpc.tf already sets.
+                    alb.ingress.kubernetes.io/scheme: internet-facing
                     alb.ingress.kubernetes.io/target-type: ip
+                    # Pinned so the Terraform Route 53 alias lookup is deterministic.
+                    alb.ingress.kubernetes.io/load-balancer-name: '{{ .metadata.annotations.jenkins_alb_name }}'
                     alb.ingress.kubernetes.io/healthcheck-path: /login
-                    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+                    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+                    alb.ingress.kubernetes.io/certificate-arn: '{{ .metadata.annotations.jenkins_certificate_arn }}'
+                    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+                    # Every HTTP request is redirected; nothing is served in the clear.
+                    alb.ingress.kubernetes.io/ssl-redirect: '443'
               # persistence is a TOP-LEVEL chart key, not controller.persistence.
               # Nested under controller it is silently ignored, and the chart
               # falls back to its default (existingClaim null, storageClass

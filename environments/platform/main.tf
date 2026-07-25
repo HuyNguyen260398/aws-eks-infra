@@ -74,6 +74,9 @@ module "platform_cluster" {
   argocd_admin_group_id        = aws_identitystore_group.argocd_admins.group_id
   github_connection_arn        = aws_codeconnections_connection.github.arn
   gitops_repo_url              = local.gitops_repo_url
+  jenkins_public_hostname      = var.jenkins_public_hostname
+  route53_hosted_zone_name     = var.route53_hosted_zone_name
+  jenkins_dns_record_enabled   = var.jenkins_dns_record_enabled
   tags                         = local.tags
 }
 
@@ -93,6 +96,8 @@ module "platform_cluster_bootstrap" {
   fargate_log_group_name                = module.platform_cluster.fargate_log_group_name
   efs_file_system_id                    = module.platform_cluster.efs_file_system_id
   jenkins_efs_access_point_id           = module.platform_cluster.jenkins_efs_access_point_id
+  jenkins_certificate_arn               = module.platform_cluster.jenkins_certificate_arn
+  jenkins_public_hostname               = module.platform_cluster.jenkins_public_hostname
 
   depends_on = [module.platform_cluster]
 }
