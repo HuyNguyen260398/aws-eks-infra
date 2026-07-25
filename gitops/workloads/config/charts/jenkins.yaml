@@ -52,9 +52,13 @@ spec:
                     alb.ingress.kubernetes.io/target-type: ip
                     alb.ingress.kubernetes.io/healthcheck-path: /login
                     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-                persistence:
-                  enabled: true
-                  existingClaim: jenkins-home
+              # persistence is a TOP-LEVEL chart key, not controller.persistence.
+              # Nested under controller it is silently ignored, and the chart
+              # falls back to its default (existingClaim null, storageClass
+              # null), creating its own unbindable PVC named "jenkins".
+              persistence:
+                enabled: true
+                existingClaim: jenkins-home
               agent:
                 enabled: true
                 namespace: apps-jenkins
