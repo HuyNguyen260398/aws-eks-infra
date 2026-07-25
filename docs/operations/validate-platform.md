@@ -17,19 +17,56 @@ A Terraform root is only validated if it contains `versions.tf` — the Makefile
 
 ```bash
 ./scripts/verify-prerequisites.sh   # tooling and AWS account preflight; mutates nothing
-./scripts/verify-platform.sh        # acceptance
-./scripts/check-drift.sh            # plan -refresh-only -detailed-exitcode on both stateful roots
+./scripts/verify-platform.sh        # acceptance, greenfield by default
+EXPECT_WORKLOADS=true ./scripts/verify-platform.sh   # once the platform hosts workloads
+./scripts/check-drift.sh            # drift on both stateful roots
 ```
 
-`verify-platform.sh` prints one `PASS`/`FAIL` line per assertion and exits nonzero if any fail:
+### `verify-platform.sh`
+
+Prints one `PASS`/`FAIL` line per assertion and exits nonzero if any fail.
+
+**Platform invariants — always checked:**
 
 - CodeConnections `AVAILABLE`, EKS and all Fargate profiles `ACTIVE`
-- `aws eks list-nodegroups` empty — the Fargate-only invariant
+- `aws eks list-nodegroups` empty, **and** every node labelled
+  `eks.amazonaws.com/compute-type=fargate`. The node-group check alone does not
+  catch self-managed EC2 capacity
 - Argo CD, ACK, and kro capabilities `ACTIVE`
-- CoreDNS, AWS Load Balancer Controller, Argo Rollouts, cert-manager, and the OpenTelemetry operator available
-- every Argo CD Application `Synced` and `Healthy`
-- no `apps-*` workload, no Ingress, no LoadBalancer Service
+- CoreDNS, AWS Load Balancer Controller, Argo Rollouts, cert-manager, and the
+  OpenTelemetry operator available
+- at least one Argo CD Application exists, and every one is `Synced` and
+  `Healthy`. Failing Applications are named with their status
 
-`check-drift.sh` passes only on detailed exit code `0`. Exit code `2` means real drift: inspect the refresh plan before reconciling, since capabilities use `RETAIN` and are not recreated by a plain apply.
+**Workload assertions — depend on `EXPECT_WORKLOADS`:**
+
+| `EXPECT_WORKLOADS` | Asserts |
+|---|---|
+| `false` (default) | the greenfield non-goals: no `apps-*` Pod, no Ingress, no LoadBalancer Service |
+| `true` | Pods live only in `apps-*` or platform namespaces, `apps-*` Pods are `Running`/`Succeeded`, and every Ingress has a load balancer address |
+
+The non-goals are only meaningful before anything is hosted. They used to be
+unconditional, so the script reported `FAIL` the moment a workload it was
+designed to host actually ran. **Set `EXPECT_WORKLOADS=true` after deploying a
+workload**, or the run reports failures by design rather than by fault.
+
+### `check-drift.sh`
+
+Reports `PASS`/`FAIL` per root and always checks both, so one drifting root does
+not mask the other.
+
+It does **not** gate on the plan's exit code. `plan -refresh-only
+-detailed-exitcode` returns `2` whenever the refresh would write anything back to
+state — including on a completely empty plan with no resource diffs, no output
+changes and no "Objects have changed" note — so the exit code is not a drift
+signal. The script inspects the JSON plan instead:
+
+| Field | Meaning |
+|---|---|
+| `resource_drift` | the real object changed outside Terraform |
+| `resource_changes` with actions other than `no-op`/`read` | state no longer matches configuration |
+
+Drifting addresses are printed. Inspect the refresh plan before reconciling,
+since capabilities use `RETAIN` and are not recreated by a plain apply.
 
 Failures map to the recovery procedures in [deploy the platform](deploy-platform.md#recovery).
