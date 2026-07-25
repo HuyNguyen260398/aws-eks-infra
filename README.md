@@ -87,6 +87,8 @@ Deployment requires:
 
 Deploy services only through separately approved service plans after platform acceptance passes. [Destroying the platform](docs/operations/destroy-platform.md) is a deliberate, guarded procedure.
 
+Before deploying from scratch, read [first deployment defects](docs/operations/first-deployment-defects.md). It records the ten defects found during the first end-to-end deployment — none of which `make terraform-check`, `make yaml-check`, or CI can catch — along with the Argo CD and Fargate invariants they established.
+
 ## Validation
 
 ```bash
