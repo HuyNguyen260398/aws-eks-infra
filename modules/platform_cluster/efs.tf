@@ -64,8 +64,13 @@ resource "aws_vpc_security_group_ingress_rule" "efs_nfs" {
   referenced_security_group_id = module.eks.cluster_primary_security_group_id
 }
 
+// Keyed by availability zone, not by subnet ID: subnet IDs are unknown until the
+// VPC applies, and for_each keys must be known at plan time. local.availability_zones
+// resolves from a data source during plan, so the keys are static and stable.
 resource "aws_efs_mount_target" "apps" {
-  for_each = toset(module.vpc.private_subnets)
+  for_each = {
+    for index, az in local.availability_zones : az => module.vpc.private_subnets[index]
+  }
 
   file_system_id  = aws_efs_file_system.apps.id
   subnet_id       = each.value
