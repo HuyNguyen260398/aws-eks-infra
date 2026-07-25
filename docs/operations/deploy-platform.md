@@ -94,13 +94,22 @@ Review the saved plan before applying. On a first deployment it creates roughly 
 
 Expect 20–30 minutes, most of it the EKS control plane and the capabilities.
 
-### CoreDNS needs one manual restart
+### CoreDNS may need one manual restart
 
-**This step is required on every new cluster, and the apply blocks until you do it.**
+**Conditional — check before acting.** This is recovery for one specific stall, not a step every deployment performs. On a clean deployment of this repository the add-on reached `ACTIVE` in 55 seconds with no intervention, because Terraform created it after the Fargate profiles already existed and the Pods scheduled on the first attempt.
 
-EKS creates the default CoreDNS Deployment when the cluster is created — before Terraform has made any Fargate profile. Those first Pods match no profile, so they stay `Pending` forever with **no scheduling events**, and Fargate never re-evaluates an already-pending Pod. The CoreDNS add-on therefore reports `DEGRADED`, and `aws_eks_addon` blocks waiting for `ACTIVE`.
+The stall happens when the CoreDNS Deployment exists *before* any Fargate profile does. Those first Pods match no profile, so they stay `Pending` forever with **no scheduling events**, and Fargate never re-evaluates an already-pending Pod. The add-on then reports `DEGRADED` and `aws_eks_addon` blocks waiting for `ACTIVE`.
 
-While the apply is still running, once the `system` Fargate profile is `ACTIVE`, open a second shell and run:
+While the apply is still running, check whether you are in that state:
+
+```bash
+kubectl -n kube-system get pods -l k8s-app=kube-dns -o wide
+```
+
+- Pods `Running` on `fargate-ip-*` nodes, or no Pods yet — nothing to do; let the apply continue.
+- Pods `Pending` with no events in `kubectl describe` — apply the restart below.
+
+Once the `system` Fargate profile is `ACTIVE`, in a second shell run:
 
 ```bash
 aws eks update-kubeconfig --name "$cluster" --region "$AWS_REGION"

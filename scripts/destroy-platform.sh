@@ -54,7 +54,7 @@ if [ "$cluster_in_state" != 0 ]; then
     '
   )
   [ -z "$workload_apps" ] || refuse "workload Applications exist:
-$(echo "$workload_apps" | sed 's/^/    /')
+    ${workload_apps//$'\n'/$'\n'    }
   Delete them and let Argo CD prune their resources first."
 
   # Ingresses and LoadBalancer Services are backed by load balancers that the
@@ -67,7 +67,7 @@ $(echo "$workload_apps" | sed 's/^/    /')
       jq -r '.items[] | "\(.metadata.namespace)/\(.metadata.name)"'
   )
   [ -z "$ingresses" ] || refuse "Ingress objects still exist:
-$(echo "$ingresses" | sed 's/^/    /')
+    ${ingresses//$'\n'/$'\n'    }
   Delete them and wait for their load balancers to disappear first."
 
   lb_services=$(
@@ -75,7 +75,7 @@ $(echo "$ingresses" | sed 's/^/    /')
       jq -r '.items[] | select(.spec.type == "LoadBalancer") | "\(.metadata.namespace)/\(.metadata.name)"'
   )
   [ -z "$lb_services" ] || refuse "LoadBalancer Services still exist:
-$(echo "$lb_services" | sed 's/^/    /')
+    ${lb_services//$'\n'/$'\n'    }
   Delete them and wait for their load balancers to disappear first."
 fi
 

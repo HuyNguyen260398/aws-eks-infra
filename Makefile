@@ -1,4 +1,4 @@
-.PHONY: terraform-fmt terraform-validate terraform-lint terraform-check yaml-lint helm-check kustomize-check yaml-check verify-prerequisites verify-platform check-drift
+.PHONY: terraform-fmt terraform-validate terraform-lint terraform-check yaml-lint helm-check kustomize-check yaml-check shell-check verify-prerequisites verify-platform check-drift
 
 TF_ROOTS := bootstrap/terraform-state environments/platform modules/platform_cluster modules/platform_cluster_bootstrap modules/ack_iam_role_selector
 
@@ -42,6 +42,11 @@ kustomize-check:
 	done
 
 yaml-check: yaml-lint helm-check kustomize-check
+
+# Default severity: style and info findings fail too, so the operational
+# scripts stay clean rather than accumulating warnings CI never surfaces.
+shell-check:
+	shellcheck scripts/*.sh
 
 verify-prerequisites:
 	./scripts/verify-prerequisites.sh

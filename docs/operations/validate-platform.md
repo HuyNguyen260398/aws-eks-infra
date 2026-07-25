@@ -7,9 +7,14 @@ Static gates run with no AWS credentials. Live gates require credentials and a c
 ```bash
 make terraform-check   # fmt -check + validate every root + tflint + checkov
 make yaml-check        # yamllint + helm lint/template + kubeconform + kustomize build
+make shell-check       # shellcheck on scripts/*.sh
 ```
 
-Both must exit `0`. CI runs the same checks with pinned tool versions and never receives AWS credentials.
+All three must exit `0`. `shell-check` runs shellcheck at its **default**
+severity, so style and info findings fail too — the operational scripts are small
+enough to keep at zero findings, and the four defects recorded in
+[first deployment defects](first-deployment-defects.md) all lived in scripts that
+no CI job ever looked at. CI runs the same checks with pinned tool versions and never receives AWS credentials.
 
 A Terraform root is only validated if it contains `versions.tf` — the Makefile and the workflow both skip roots without it. A new root must be added to `TF_ROOTS` in the `Makefile` **and** the `roots=(...)` array in `.github/workflows/terraform-ci.yaml`, or CI silently stops validating it.
 

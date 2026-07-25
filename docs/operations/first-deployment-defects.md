@@ -464,14 +464,16 @@ passed vacuously against an empty `argocd` namespace (`all` on an empty array is
 true), and `list-nodegroups` alone cannot detect self-managed EC2 capacity, so
 every node is now asserted to be `eks.amazonaws.com/compute-type=fargate`.
 
-### `docs/operations/deploy-platform.md`: the CoreDNS restart was not required — STILL OPEN
+### `docs/operations/deploy-platform.md`: the CoreDNS restart was not required — FIXED
 
-The runbook states the manual CoreDNS restart "is required on every new cluster,
+The runbook stated the manual CoreDNS restart "is required on every new cluster,
 and the apply blocks until you do it." On this deployment it was **not** needed —
 the add-on was created after the Fargate profiles existed, so the Pods scheduled
 on the first attempt and the add-on reached `ACTIVE` in 55 seconds without
-intervention. The runbook should present it as conditional recovery, not a
-mandatory step.
+intervention.
+
+The section is now framed as conditional recovery for one specific stall, with a
+check that tells you which state you are in before you act.
 
 ---
 

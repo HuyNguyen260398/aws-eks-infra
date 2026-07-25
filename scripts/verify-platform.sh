@@ -24,7 +24,13 @@ fail_line() {
   echo "FAIL $1"
   fail=1
 }
-assert_eq() { [ "$2" = "$3" ] && pass "$1" || fail_line "$1"; }
+assert_eq() {
+  if [ "$2" = "$3" ]; then pass "$1"; else fail_line "$1"; fi
+}
+# $2 is a newline-separated list that must be empty; offenders are named.
+assert_empty() {
+  if [ -z "$2" ]; then pass "$1"; else fail_line "$1 ($(echo "$2" | tr '\n' ' '))"; fi
+}
 
 # ---------------------------------------------------------------- platform ---
 
@@ -40,10 +46,17 @@ non_fargate="$(
   kubectl get nodes -o json |
     jq -r '.items[] | select(.metadata.labels["eks.amazonaws.com/compute-type"] != "fargate") | .metadata.name'
 )"
-[ -z "$non_fargate" ] && pass "All nodes Fargate" || fail_line "All nodes Fargate ($(echo "$non_fargate" | tr '\n' ' '))"
+assert_empty "All nodes Fargate" "$non_fargate"
 
 for capability in argocd ack kro; do assert_eq "${capability} capability ACTIVE" "$(aws eks describe-capability --cluster-name "$cluster" --capability-name "${cluster}-${capability}" --region "$region" --query 'capability.status' --output text)" ACTIVE; done
-for deployment in 'kube-system coredns' 'kube-system aws-load-balancer-controller' 'argo-rollouts argo-rollouts' 'cert-manager cert-manager' 'cert-manager cert-manager-webhook' 'opentelemetry-operator-system opentelemetry-operator'; do read -r ns name <<<"$deployment"; kubectl -n "$ns" rollout status deployment/"$name" --timeout=5m >/dev/null && pass "Deployment $ns/$name" || fail_line "Deployment $ns/$name"; done
+for deployment in 'kube-system coredns' 'kube-system aws-load-balancer-controller' 'argo-rollouts argo-rollouts' 'cert-manager cert-manager' 'cert-manager cert-manager-webhook' 'opentelemetry-operator-system opentelemetry-operator'; do
+  read -r ns name <<<"$deployment"
+  if kubectl -n "$ns" rollout status deployment/"$name" --timeout=5m >/dev/null; then
+    pass "Deployment $ns/$name"
+  else
+    fail_line "Deployment $ns/$name"
+  fi
+done
 
 # `all` on an empty array is vacuously true, so an empty argocd namespace used to
 # pass this. Require at least one Application as well.
@@ -79,7 +92,7 @@ if [ "$EXPECT_WORKLOADS" = true ]; then
         | "\(.metadata.namespace)/\(.metadata.name)"
       '
   )"
-  [ -z "$stray" ] && pass "Workload Pods confined to apps-*" || fail_line "Workload Pods confined to apps-* ($(echo "$stray" | tr '\n' ' '))"
+  assert_empty "Workload Pods confined to apps-*" "$stray"
 
   unhealthy="$(
     kubectl get pods -A -o json |
@@ -90,14 +103,14 @@ if [ "$EXPECT_WORKLOADS" = true ]; then
         | "\(.metadata.namespace)/\(.metadata.name) \(.status.phase)"
       '
   )"
-  [ -z "$unhealthy" ] && pass "Workload Pods Running" || fail_line "Workload Pods Running ($(echo "$unhealthy" | tr '\n' ' '))"
+  assert_empty "Workload Pods Running" "$unhealthy"
 
   # Every Ingress must have been reconciled into a load balancer address.
   pending="$(
     kubectl get ingress -A -o json |
       jq -r '.items[] | select((.status.loadBalancer.ingress // []) | length == 0) | "\(.metadata.namespace)/\(.metadata.name)"'
   )"
-  [ -z "$pending" ] && pass "Ingresses have load balancer addresses" || fail_line "Ingresses have load balancer addresses ($(echo "$pending" | tr '\n' ' '))"
+  assert_empty "Ingresses have load balancer addresses" "$pending"
 else
   # Greenfield non-goals: nothing is hosted yet.
   assert_eq "No service workloads" "$(kubectl get pods -A -o json | jq '[.items[] | select(.metadata.namespace | startswith("apps-"))] | length')" 0
