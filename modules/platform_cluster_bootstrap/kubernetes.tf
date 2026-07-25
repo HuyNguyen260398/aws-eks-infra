@@ -39,6 +39,13 @@ resource "kubernetes_manifest" "bootstrap" {
       namespace = "argocd"
     }
     spec = {
+      // Required: the template below uses Go-template syntax ({{ .name }},
+      // {{ .metadata.annotations.* }}). Without this, Argo CD falls back to
+      // legacy fasttemplate, which only understands {{name}}/{{server}} and
+      // cannot traverse annotations - every Application fails validation.
+      goTemplate        = true
+      goTemplateOptions = ["missingkey=error"]
+
       generators = [
         {
           clusters = {
