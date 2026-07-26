@@ -31,8 +31,8 @@ kubectl -n apps-jenkins get pods,pvc,ingress
 ```
 
 Expected: the Jenkins Application is `Synced`/`Healthy`, the controller pod is
-`Running`, the `jenkins-home` PVC is `Bound`, and the `jenkins` Ingress has an
-internal ALB address.
+`Running`, the `jenkins-home` PVC is `Bound`, and the `jenkins` Ingress has a
+public ALB address.
 
 ## Retrieve the admin password
 
@@ -45,12 +45,25 @@ The admin user is `admin`.
 
 ## Reach the UI
 
-The ALB is internal. From a host inside the VPC (VPN or bastion), browse to the
-ingress address. Otherwise port-forward:
+Jenkins is served on the shared public ALB under `/jenkins`:
+
+```bash
+aws elbv2 describe-load-balancers --names aws-eks-infra-public \
+  --query 'LoadBalancers[0].DNSName' --output text
+# open http://<dns-name>/jenkins
+```
+
+See [public workload access](public-workload-access.md). The admin UI shows a
+"Jenkins URL is not set" monitor: the ALB hostname is assigned by AWS and cannot
+be templated in, so JCasC falls back to the in-cluster URL. That URL is the
+correct one for the agent JNLP handshake, so the warning is cosmetic. To clear
+it, paste the ALB name into Manage Jenkins → System → Jenkins URL.
+
+If you would rather not go over the internet, port-forward instead:
 
 ```bash
 kubectl -n apps-jenkins port-forward svc/jenkins 8080:8080
-# open http://localhost:8080
+# open http://localhost:8080/jenkins
 ```
 
 ## Run a test build (Fargate agent)

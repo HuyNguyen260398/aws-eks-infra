@@ -69,15 +69,6 @@ controller is still running.
 
 3. Run the script.
 
-## `jenkins_dns_record_enabled`
-
-The script forces `-var jenkins_dns_record_enabled=false` on every destroy plan,
-regardless of `terraform.tfvars`. The Route 53 alias reads the ALB through a
-`data "aws_lb"` lookup, and once the Ingress guard has removed the load balancer
-that read fails the plan with `reading ELBv2 Load Balancers: couldn't find
-resource`. Forcing the flag off drops the data source and destroys the alias
-record in the same pass. See [public workload access](public-workload-access.md).
-
 ## Afterwards
 
 Verify nothing was left behind:
