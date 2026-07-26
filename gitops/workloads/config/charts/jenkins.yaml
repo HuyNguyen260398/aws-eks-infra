@@ -31,10 +31,17 @@ spec:
             values: |
               controller:
                 serviceType: ClusterIP
-                jenkinsUrlProtocol: https
-                # Absolute URL so links, webhooks and the agent JNLP handshake
-                # all reference the public name rather than the ALB hostname.
-                jenkinsUrl: 'https://{{ .metadata.annotations.jenkins_public_hostname }}'
+                jenkinsUrlProtocol: http
+                # Serve the war under /jenkins so one shared ALB can host many
+                # workloads by path. Jenkins generates prefixed links and the
+                # chart prefixes its own probes, so the ALB needs no rewrite.
+                jenkinsUriPrefix: /jenkins
+                # controller.jenkinsUrl is deliberately unset: the ALB hostname
+                # is assigned by AWS and is not knowable at render time. JCasC
+                # falls back to http://jenkins:8080/jenkins, which is the
+                # correct URL for the agent JNLP handshake because agents run
+                # in-cluster. The cost is a cosmetic "Jenkins URL is not set"
+                # admin monitor.
                 resources:
                   requests:
                     cpu: "1000m"
@@ -50,20 +57,23 @@ spec:
                 ingress:
                   enabled: true
                   ingressClassName: alb
-                  hostName: '{{ .metadata.annotations.jenkins_public_hostname }}'
+                  # No hostName: a host-less rule matches any Host header, so
+                  # the ALB answers on its own AWS-assigned DNS name.
+                  path: /jenkins
                   annotations:
-                    # internet-facing requires the public subnets to carry
-                    # kubernetes.io/role/elb=1, which vpc.tf already sets.
+                    # --- Group-level. Every member of platform-public must
+                    # carry these four byte-identical or the controller refuses
+                    # to reconcile the group. See
+                    # docs/operations/public-workload-access.md.
+                    alb.ingress.kubernetes.io/group.name: platform-public
                     alb.ingress.kubernetes.io/scheme: internet-facing
+                    alb.ingress.kubernetes.io/load-balancer-name: aws-eks-infra-public
+                    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+                    # --- Per workload.
+                    # target-type ip is the only mode EKS Fargate supports.
                     alb.ingress.kubernetes.io/target-type: ip
-                    # Pinned so the Terraform Route 53 alias lookup is deterministic.
-                    alb.ingress.kubernetes.io/load-balancer-name: '{{ .metadata.annotations.jenkins_alb_name }}'
-                    alb.ingress.kubernetes.io/healthcheck-path: /login
-                    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-                    alb.ingress.kubernetes.io/certificate-arn: '{{ .metadata.annotations.jenkins_certificate_arn }}'
-                    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-                    # Every HTTP request is redirected; nothing is served in the clear.
-                    alb.ingress.kubernetes.io/ssl-redirect: '443'
+                    alb.ingress.kubernetes.io/group.order: '10'
+                    alb.ingress.kubernetes.io/healthcheck-path: /jenkins/login
               # persistence is a TOP-LEVEL chart key, not controller.persistence.
               # Nested under controller it is silently ignored, and the chart
               # falls back to its default (existingClaim null, storageClass
