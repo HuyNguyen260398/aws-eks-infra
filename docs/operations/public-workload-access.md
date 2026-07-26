@@ -54,6 +54,7 @@ just the new one. Copy them exactly.
 ```yaml
 ingressClassName: alb
 path: /<prefix>          # and NO hostName, so the rule matches any Host header
+pathType: Prefix         # NOT ImplementationSpecific - see below
 annotations:
   # --- Group-level: byte-identical on every member.
   alb.ingress.kubernetes.io/group.name: platform-public
@@ -67,6 +68,27 @@ annotations:
 ```
 
 `group.order` values in use: Jenkins `10`. Pick an unused number.
+
+### `pathType` must be `Prefix`
+
+Many charts default `pathType` to `ImplementationSpecific`, which the load
+balancer controller passes through verbatim — the ALB then gets a single
+**exact-match** rule for `/<prefix>`, and every subpath (`/<prefix>/login`,
+`/<prefix>/static/...`) returns a `404` from the load balancer before it ever
+reaches your Pod. The workload looks deployed and healthy while being almost
+entirely unreachable.
+
+`Prefix` makes the controller emit both `/<prefix>` and `/<prefix>/*`. Confirm
+the resulting rules rather than trusting the Ingress:
+
+```bash
+lb=$(aws elbv2 describe-load-balancers --names aws-eks-infra-public \
+  --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+li=$(aws elbv2 describe-listeners --load-balancer-arn "$lb" \
+  --query 'Listeners[0].ListenerArn' --output text)
+aws elbv2 describe-rules --listener-arn "$li" \
+  --query 'Rules[].[Priority,Conditions[0].PathPatternConfig.Values]' --output text
+```
 
 ### Keep Argo CD placeholders out of the annotations
 

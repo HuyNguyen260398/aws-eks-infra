@@ -60,6 +60,13 @@ spec:
                   # No hostName: a host-less rule matches any Host header, so
                   # the ALB answers on its own AWS-assigned DNS name.
                   path: /jenkins
+                  # Prefix, not the chart default of ImplementationSpecific.
+                  # ImplementationSpecific passes the path through verbatim, so
+                  # the ALB gets one exact-match rule for /jenkins and every
+                  # subpath such as /jenkins/login returns a 404 from the load
+                  # balancer itself. Prefix makes the controller emit /jenkins
+                  # and /jenkins/* instead.
+                  pathType: Prefix
                   annotations:
                     # --- Group-level. Every member of platform-public must
                     # carry these four byte-identical or the controller refuses
