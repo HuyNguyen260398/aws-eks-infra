@@ -35,6 +35,22 @@ spec:
             region: '{{ .metadata.annotations.aws_region }}'
             vpcId: '{{ .metadata.annotations.vpc_id }}'
             replicaCount: 2
+            # Let cert-manager issue the admission webhook certificate.
+            #
+            # Without this the chart mints a self-signed CA at render time, so
+            # every Argo CD re-render produces a new one. Argo CD ignores
+            # caBundle differences on webhook configurations by default, so the
+            # ValidatingWebhookConfiguration keeps advertising the CA from one
+            # render while the Secret the pods serve comes from another. They
+            # drift apart permanently and every Ingress admission then fails
+            # with "x509: certificate signed by unknown authority", which blocks
+            # ALB creation for every workload.
+            #
+            # cert-manager owns the certificate instead and its ca-injector
+            # keeps caBundle in step, so the pair cannot drift. cert-manager is
+            # installed by config/addons/cert-manager.yaml and must be Healthy
+            # before this Application syncs.
+            enableCertManager: true
             serviceAccount:
               create: true
               name: aws-load-balancer-controller
