@@ -418,9 +418,10 @@ App reauthorization on the next deploy.
 
 It now destroys `module.platform_cluster_bootstrap` and `module.platform_cluster`
 by target and preserves those account-level resources. `DESTROY_ROOT=true` opts
-into the full root destroy. It also forces
-`-var jenkins_dns_record_enabled=false`, because the Route 53 alias reads the ALB
-through a data source that fails the plan once the load balancer is gone.
+into the full root destroy. It also once forced
+`-var jenkins_dns_record_enabled=false`, because the Route 53 alias read the ALB
+through a data source that failed the plan after the load balancer was gone; that
+variable and the alias record no longer exist, so the flag was removed with them.
 
 ### `scripts/check-drift.sh` reported a false failure — FIXED
 

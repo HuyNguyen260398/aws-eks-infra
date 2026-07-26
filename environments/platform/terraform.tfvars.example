@@ -7,9 +7,3 @@ public_access_cidrs = ["203.0.113.10/32"]
 argocd_admin_user_ids = [
   "IDENTITY_STORE_USER_ID",
 ]
-
-# Public HTTPS exposure for Jenkins. Leave empty to keep the ALB internal.
-# See docs/operations/public-workload-access.md for the two-phase apply.
-# jenkins_public_hostname  = "jenkins.example.com"
-# route53_hosted_zone_name = "example.com"
-# jenkins_dns_record_enabled = false

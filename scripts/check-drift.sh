@@ -11,7 +11,20 @@
 #   resource_changes  state no longer matches configuration
 #
 # Both roots are always checked, so one drifting root does not hide the other.
+#
+# Some attributes are read-only counters that AWS updates as the workload runs.
+# They appear in resource_drift on every refresh forever, which would make this
+# gate permanently red and therefore ignored. IGNORED_DRIFT_ATTRS lists them per
+# resource type. A drift entry is suppressed only when *every* differing
+# attribute is on its type's list, so a real change alongside a counter still
+# fails. Keep the lists minimal and justify each entry.
 set -euo pipefail
+
+# aws_efs_file_system.size_in_bytes: metered capacity. Jenkins writing to
+# /jenkins-home moves it on every refresh; it is not settable in configuration.
+IGNORED_DRIFT_ATTRS='{
+  "aws_efs_file_system": ["size_in_bytes"]
+}'
 
 plan_dir="$(mktemp -d)"
 trap 'rm -rf "$plan_dir"' EXIT
@@ -32,7 +45,19 @@ for root in bootstrap/terraform-state environments/platform; do
 
   drifted="$(
     printf '%s' "$json" |
-      jq -r '(.resource_drift // [])[] | "    drifted outside Terraform: \(.address)"'
+      jq -r --argjson ignored "$IGNORED_DRIFT_ATTRS" '
+        # Attributes whose refreshed value differs from the value in state.
+        def diff_keys($b; $a):
+          ((($b // {}) | keys_unsorted) + (($a // {}) | keys_unsorted))
+          | unique
+          | map(select((($b // {})[.]) != (($a // {})[.])));
+
+        (.resource_drift // [])[]
+        | . as $d
+        | (diff_keys($d.change.before; $d.change.after) - ($ignored[$d.type] // [])) as $material
+        | select(($material | length) > 0)
+        | "    drifted outside Terraform: \($d.address) [\($material | join(","))]"
+      '
   )"
   changed="$(
     printf '%s' "$json" | jq -r '

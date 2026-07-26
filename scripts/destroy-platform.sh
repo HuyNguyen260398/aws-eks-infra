@@ -83,24 +83,18 @@ plan_dir="$(mktemp -d)"
 trap 'rm -rf "$plan_dir"' EXIT
 plan="$plan_dir/platform-destroy.tfplan"
 
-# Forced off for the destroy regardless of terraform.tfvars. The Route 53 alias
-# reads the ALB through a data source, and that read fails the plan once the
-# Ingress guard above has removed the load balancer. Setting it false drops the
-# data source and destroys the alias record in the same pass.
-destroy_vars=(-var jenkins_dns_record_enabled=false)
-
 # The bootstrap module goes first: its kubernetes provider is configured from the
 # cluster endpoint, so it cannot be planned once the cluster is gone.
 terraform -chdir="$ROOT" destroy \
-  -target=module.platform_cluster_bootstrap "${destroy_vars[@]}" -input=false
+  -target=module.platform_cluster_bootstrap -input=false
 
 if [ "$DESTROY_ROOT" = true ]; then
   echo "DESTROY_ROOT=true - the CodeConnections connection and Identity Center group will also be destroyed."
-  terraform -chdir="$ROOT" plan -destroy "${destroy_vars[@]}" -out="$plan" -input=false
+  terraform -chdir="$ROOT" plan -destroy -out="$plan" -input=false
 else
   echo "Preserving the CodeConnections connection and Identity Center group (DESTROY_ROOT=true to remove them)."
   terraform -chdir="$ROOT" plan -destroy \
-    -target=module.platform_cluster "${destroy_vars[@]}" -out="$plan" -input=false
+    -target=module.platform_cluster -out="$plan" -input=false
 fi
 
 terraform -chdir="$ROOT" apply "$plan"
