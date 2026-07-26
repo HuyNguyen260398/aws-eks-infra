@@ -10,11 +10,11 @@ There is no DNS layer. You reach workloads at the ALB's AWS-assigned name:
 ```
 http://aws-eks-infra-public-<id>.<region>.elb.amazonaws.com
   /jenkins  -> apps-jenkins/jenkins:8080
-  /         -> 503
+  /         -> 404
 ```
 
-`/` returning 503 is correct: the group has no catch-all member. It is not a
-fault.
+`/` returning 404 is correct: the listener's default action is a fixed-response
+404 because the group has no catch-all member. It is not a fault.
 
 Traffic is **HTTP only and open to the world**. See [Security](#security) before
 putting anything sensitive behind it.
