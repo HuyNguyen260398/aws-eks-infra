@@ -71,7 +71,25 @@ signal. The script inspects the JSON plan instead:
 | `resource_drift` | the real object changed outside Terraform |
 | `resource_changes` with actions other than `no-op`/`read` | state no longer matches configuration |
 
-Drifting addresses are printed. Inspect the refresh plan before reconciling,
-since capabilities use `RETAIN` and are not recreated by a plain apply.
+Drifting addresses are printed with the attributes that actually differ.
+Inspect the refresh plan before reconciling, since capabilities use `RETAIN` and
+are not recreated by a plain apply.
+
+### Ignored read-only counters
+
+Some attributes are read-only values AWS updates as the workload runs. They
+would appear in `resource_drift` on every refresh forever, making this gate
+permanently red and therefore ignored. `IGNORED_DRIFT_ATTRS` at the top of the
+script lists them per resource type:
+
+| Resource type | Attribute | Why |
+|---|---|---|
+| `aws_efs_file_system` | `size_in_bytes` | Metered capacity. Jenkins writing to `/jenkins-home` moves it on every refresh, and it is not settable in configuration. |
+
+A drift entry is suppressed only when **every** differing attribute is on its
+type's list. Real drift alongside a counter still fails — an EFS filesystem that
+both grew and had encryption disabled reports `[encrypted]`. Keep the lists
+minimal and justify each entry; anything settable in configuration belongs in a
+`lifecycle` block, not here.
 
 Failures map to the recovery procedures in [deploy the platform](deploy-platform.md#recovery).
