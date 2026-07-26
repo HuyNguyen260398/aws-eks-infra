@@ -67,13 +67,3 @@ output "fargate_profile_status" {
   description = "Status of each Amazon EKS Fargate profile."
   value       = module.platform_cluster.fargate_profile_status
 }
-
-output "jenkins_certificate_arn" {
-  description = "ARN of the validated ACM certificate for the Jenkins public hostname. Empty when public exposure is disabled."
-  value       = module.platform_cluster.jenkins_certificate_arn
-}
-
-output "jenkins_public_hostname" {
-  description = "Public DNS name serving Jenkins. Empty when public exposure is disabled."
-  value       = module.platform_cluster.jenkins_public_hostname
-}
