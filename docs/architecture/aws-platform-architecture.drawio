@@ -1,0 +1,285 @@
+<mxfile host="Electron">
+  <diagram name="AWS platform architecture" id="d">
+    <mxGraphModel dx="1341" dy="999" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2167" pageHeight="2566" background="light-dark(#ffffff, #121212)" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" style="locked=1;" />
+        <mxCell id="operator" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=middle;" value="DEVOPS OPERATOR Terraform CLI" vertex="1">
+          <mxGeometry height="74" width="210" x="124" y="289" as="geometry" />
+        </mxCell>
+        <mxCell id="github" parent="1" style="sketch=0;html=1;outlineConnect=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontColor=#232F3E;aspect=fixed;shape=image;image=data:image/png,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;" value="GitHub aws-eks-infra" vertex="1">
+          <mxGeometry height="48" width="48" x="190" y="557" as="geometry" />
+        </mxCell>
+        <mxCell id="internet" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=middle;" value="INTERNET CLIENTS http://alb-dns/jenkins" vertex="1">
+          <mxGeometry height="74" width="210" x="109" y="990" as="geometry" />
+        </mxCell>
+        <mxCell id="aws" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#232F3E;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#232F3E;dashed=0;" value="AWS Cloud · platform account" vertex="1">
+          <mxGeometry height="1974" width="1645" x="446" y="116" as="geometry" />
+        </mxCell>
+        <mxCell id="region" parent="aws" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=1;strokeColor=#147EBA;" value="AWS Region · ap-southeast-1" vertex="1">
+          <mxGeometry height="1886" width="1593" x="26" y="62" as="geometry" />
+        </mxCell>
+        <mxCell id="vpc" parent="region" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;strokeColor=#8C4FFF;" value="VPC · three AZs · public ingress + private Fargate scheduling" vertex="1">
+          <mxGeometry height="794" width="1537" x="28" y="778" as="geometry" />
+        </mxCell>
+        <mxCell id="az_a" parent="vpc" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_availability_zone;strokeColor=#545B64;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#545B64;dashed=1;strokeColor=#2F9491;" value="Availability Zone ap-southeast-1a" vertex="1">
+          <mxGeometry height="650" width="467" x="236" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="public_a" parent="az_a" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_subnet;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;fillColor=light-dark(#eef5e6,#1a2410);strokeColor=#7AA116;" value="Public subnet" vertex="1">
+          <mxGeometry height="210" width="415" x="26" y="62" as="geometry" />
+        </mxCell>
+        <mxCell id="nat_a" parent="public_a" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#232F3E;fillColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;" value="Single NAT gateway" vertex="1">
+          <mxGeometry height="48" width="48" x="97" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="alb_a" parent="public_a" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.application_load_balancer;" value="Shared public ALB" vertex="1">
+          <mxGeometry height="48" width="48" x="274" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="private_a" parent="az_a" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_subnet;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;fillColor=light-dark(#e6f4f4,#0f2424);strokeColor=#00A4A6;" value="Private subnet" vertex="1">
+          <mxGeometry height="318" width="292" x="88" y="306" as="geometry" />
+        </mxCell>
+        <mxCell id="fargate_a" parent="private_a" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.fargate;" value="EKS Fargate Pods + controllers" vertex="1">
+          <mxGeometry height="48" width="48" x="122" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="efs_mt_a" parent="private_a" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_file_system;" value="EFS mount target" vertex="1">
+          <mxGeometry height="48" width="48" x="122" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="igw" parent="vpc" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#232F3E;fillColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;" value="Internet Gateway" vertex="1">
+          <mxGeometry height="48" width="48" x="74" y="42" as="geometry" />
+        </mxCell>
+        <mxCell id="az_b" parent="vpc" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_availability_zone;strokeColor=#545B64;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#545B64;dashed=1;strokeColor=#2F9491;" value="Availability Zone ap-southeast-1b" vertex="1">
+          <mxGeometry height="650" width="344" x="749" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="public_b" parent="az_b" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_subnet;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;fillColor=light-dark(#eef5e6,#1a2410);strokeColor=#7AA116;" value="Public subnet" vertex="1">
+          <mxGeometry height="210" width="235" x="55" y="62" as="geometry" />
+        </mxCell>
+        <mxCell id="alb_b" parent="public_b" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.application_load_balancer;" value="Shared public ALB" vertex="1">
+          <mxGeometry height="48" width="48" x="94" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="private_b" parent="az_b" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_subnet;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;fillColor=light-dark(#e6f4f4,#0f2424);strokeColor=#00A4A6;" value="Private subnet" vertex="1">
+          <mxGeometry height="318" width="292" x="26" y="306" as="geometry" />
+        </mxCell>
+        <mxCell id="fargate_b" parent="private_b" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.fargate;" value="EKS Fargate Pods + controllers" vertex="1">
+          <mxGeometry height="48" width="48" x="122" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="efs_mt_b" parent="private_b" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_file_system;" value="EFS mount target" vertex="1">
+          <mxGeometry height="48" width="48" x="122" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="az_c" parent="vpc" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_availability_zone;strokeColor=#545B64;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#545B64;dashed=1;strokeColor=#2F9491;" value="Availability Zone ap-southeast-1c" vertex="1">
+          <mxGeometry height="650" width="344" x="1139" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="public_c" parent="az_c" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_subnet;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;fillColor=light-dark(#eef5e6,#1a2410);strokeColor=#7AA116;" value="Public subnet" vertex="1">
+          <mxGeometry height="210" width="235" x="55" y="62" as="geometry" />
+        </mxCell>
+        <mxCell id="alb_c" parent="public_c" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.application_load_balancer;" value="Shared public ALB" vertex="1">
+          <mxGeometry height="48" width="48" x="94" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="private_c" parent="az_c" style="sketch=0;outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_subnet;strokeColor=#879196;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#879196;dashed=0;fillColor=light-dark(#e6f4f4,#0f2424);strokeColor=#00A4A6;" value="Private subnet" vertex="1">
+          <mxGeometry height="318" width="292" x="26" y="306" as="geometry" />
+        </mxCell>
+        <mxCell id="fargate_c" parent="private_c" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.fargate;" value="EKS Fargate Pods + controllers" vertex="1">
+          <mxGeometry height="48" width="48" x="122" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="efs_mt_c" parent="private_c" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_file_system;" value="EFS mount target" vertex="1">
+          <mxGeometry height="48" width="48" x="122" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="state_band" parent="region" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Terraform remote state" vertex="1">
+          <mxGeometry height="166" width="387" x="28" y="64" as="geometry" />
+        </mxCell>
+        <mxCell id="state_s3" parent="state_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" value="S3 state + lockfiles" vertex="1">
+          <mxGeometry height="48" width="48" x="82" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="state_kms" parent="state_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" value="State KMS key" vertex="1">
+          <mxGeometry height="48" width="48" x="282" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="identity_band" parent="region" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Identity and GitOps access" vertex="1">
+          <mxGeometry height="166" width="593" x="28" y="302" as="geometry" />
+        </mxCell>
+        <mxCell id="connections" parent="identity_band" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#5A6B7B;fontColor=#1A1A1A;fontSize=11;fontStyle=0;verticalAlign=middle;" value="AWS CodeConnections GitHub connection" vertex="1">
+          <mxGeometry height="62" width="153" x="24" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="idc" parent="identity_band" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#5A6B7B;fontColor=#1A1A1A;fontSize=11;fontStyle=0;verticalAlign=middle;" value="IAM Identity Center Argo CD admin group" vertex="1">
+          <mxGeometry height="62" width="153" x="225" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="iam" parent="identity_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;" value="IAM + OIDC / IRSA" vertex="1">
+          <mxGeometry height="48" width="48" x="474" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="control_band" parent="region" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Amazon EKS managed control plane and Capabilities · outside Fargate" vertex="1">
+          <mxGeometry height="166" width="771" x="28" y="542" as="geometry" />
+        </mxCell>
+        <mxCell id="argocd_cap" parent="control_band" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#5A6B7B;fontColor=#1A1A1A;fontSize=11;fontStyle=0;verticalAlign=middle;" value="Managed Argo CD Capability" vertex="1">
+          <mxGeometry height="62" width="127" x="24" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="eks_cp" parent="control_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.eks;" value="Amazon EKS 1.35 private + restricted public API" vertex="1">
+          <mxGeometry height="48" width="48" x="279" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ack_cap" parent="control_band" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#5A6B7B;fontColor=#1A1A1A;fontSize=11;fontStyle=0;verticalAlign=middle;" value="Managed ACK Capability" vertex="1">
+          <mxGeometry height="62" width="120" x="455" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kro_cap" parent="control_band" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#5A6B7B;fontColor=#1A1A1A;fontSize=11;fontStyle=0;verticalAlign=middle;" value="Managed kro Capability" vertex="1">
+          <mxGeometry height="62" width="120" x="627" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="storage_band" parent="region" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Regional persistent storage · outside VPC" vertex="1">
+          <mxGeometry height="166" width="413" x="52" y="1668" as="geometry" />
+        </mxCell>
+        <mxCell id="efs" parent="storage_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_file_system;" value="Encrypted EFS Jenkins access point" vertex="1">
+          <mxGeometry height="48" width="48" x="100" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="efs_kms" parent="storage_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" value="EFS KMS key" vertex="1">
+          <mxGeometry height="48" width="48" x="315" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="observability_band" parent="region" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#ffffff,#0f1620);strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Regional observability · outside VPC" vertex="1">
+          <mxGeometry height="166" width="483" x="521" y="1668" as="geometry" />
+        </mxCell>
+        <mxCell id="cloudwatch" parent="observability_band" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#E7157B;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.cloudwatch_logs;" value="CloudWatch Logs control plane · Fargate · flow logs" vertex="1">
+          <mxGeometry height="48" width="48" x="100" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="logs_kms" parent="observability_band" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;" value="Observability KMS key" vertex="1">
+          <mxGeometry height="48" width="48" x="350" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ed12" edge="1" parent="region" source="fargate_plane" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.313;exitY=1.005;exitDx=0;exitDy=0;exitPerimeter=0;flowAnimation=1;" target="cloudwatch" value="logs + telemetry">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="757" y="1316" />
+              <mxPoint x="757" y="1620" />
+              <mxPoint x="645" y="1620" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="__title" parent="1" style="text;html=1;align=center;fontStyle=1;fontSize=14;fontColor=light-dark(#232F3E,#E8E8E8);" value="AWS EKS Fargate Platform — declared desired state (platform currently torn down)" vertex="1">
+          <mxGeometry height="30" width="2167" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ed1" edge="1" parent="1" source="operator" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;flowAnimation=1;" target="state_s3" value="backend + lock">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="326" />
+              <mxPoint x="340" y="326" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed2" edge="1" parent="1" source="state_s3" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="state_kms" value="SSE-KMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ed3" edge="1" parent="1" source="github" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="connections" value="Git source">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="581" />
+              <mxPoint x="260" y="581" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed4" edge="1" parent="1" source="connections" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3333333333333333;entryY=0;entryDx=0;entryDy=0;flowAnimation=1;" target="argocd_cap" value="UseConnection">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="601" y="670" />
+              <mxPoint x="566" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed5" edge="1" parent="1" source="idc" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.6666666666666666;entryY=0;entryDx=0;entryDy=0;flowAnimation=1;" target="argocd_cap" value="ADMIN role">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="801.53" y="694" />
+              <mxPoint x="608.71" y="694" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed6" edge="1" parent="1" source="argocd_cap" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.333;entryDx=0;entryDy=0;flowAnimation=1;" target="fargate_plane" value="reconciles">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="524" y="819" />
+              <mxPoint x="490" y="819" />
+              <mxPoint x="490" y="1427.32" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed7" edge="1" parent="1" source="internet" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;flowAnimation=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="igw" value="HTTP :80">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="319.02" y="1022.02" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed8" edge="1" parent="1" source="igw" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;flowAnimation=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="shared_alb" value="ingress">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="622" y="1020" />
+              <mxPoint x="950" y="1020" />
+              <mxPoint x="950" y="1200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed9" edge="1" parent="1" source="shared_alb" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;flowAnimation=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.6666666666666666;entryY=0;entryDx=0;entryDy=0;" target="fargate_plane" value="IP targets">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1436" y="1340" />
+              <mxPoint x="1542.68" y="1340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed10" edge="1" parent="1" source="efs_mt_a" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;flowAnimation=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="efs" value="NFS :2049">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="970" y="1800" />
+              <mxPoint x="648" y="1800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ed11" edge="1" parent="1" source="efs" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="efs_kms" value="encrypted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ed13" edge="1" parent="1" source="cloudwatch" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;fontSize=10;fontColor=light-dark(#1B2733,#CFE0F0);strokeColor=light-dark(#2D6A9F,#5B9BD5);strokeWidth=2;dashed=1;labelBackgroundColor=light-dark(#FFFFFF,#0B0F14);exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;flowAnimation=1;" target="logs_kms" value="encrypted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aKjhhjhMuC5AKBfwfw1F-2" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="346" width="1644" x="446" y="2158" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_band" parent="aKjhhjhMuC5AKBfwfw1F-2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5A6B7B;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;container=0;" value="Diagram legend" vertex="1">
+          <mxGeometry height="346" width="1644" as="geometry" />
+        </mxCell>
+        <mxCell id="aKjhhjhMuC5AKBfwfw1F-1" connectable="0" parent="aKjhhjhMuC5AKBfwfw1F-2" style="group" value="" vertex="1">
+          <mxGeometry height="262" width="1600" x="24" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="colour_key" parent="aKjhhjhMuC5AKBfwfw1F-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Key · colours and line styles used above" vertex="1">
+          <mxGeometry height="262" width="1192.1156373193166" as="geometry" />
+        </mxCell>
+        <mxCell id="key_actor" parent="colour_key" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=middle;align=center;" value="EXTERNAL ACTOR Operator · Git source · internet client" vertex="1">
+          <mxGeometry height="74" width="264.9145860709593" x="25.2299605781866" y="112" as="geometry" />
+        </mxCell>
+        <mxCell id="key_alb" parent="colour_key" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=none;strokeColor=#8C4FFF;fontColor=#8C4FFF;fontSize=11;fontStyle=1;verticalAlign=middle;align=center;" value="SHARED ALB SPAN One internet-facing ALB across three AZs" vertex="1">
+          <mxGeometry height="74" width="264.9145860709593" x="317.47700394218134" y="112" as="geometry" />
+        </mxCell>
+        <mxCell id="key_fargate" parent="colour_key" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=none;strokeColor=#ED7100;fontColor=#ED7100;fontSize=11;fontStyle=1;verticalAlign=middle;align=center;" value="FARGATE DATA PLANE SPAN Pods scheduled in every private subnet" vertex="1">
+          <mxGeometry height="74" width="264.9145860709593" x="609.7240473061761" y="112" as="geometry" />
+        </mxCell>
+        <mxCell id="key_flow" parent="colour_key" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=middle;align=center;" value="FLOW Solid: traffic + storage Dashed: provisioning · GitOps · telemetry" vertex="1">
+          <mxGeometry height="74" width="264.9145860709593" x="901.9710906701708" y="112" as="geometry" />
+        </mxCell>
+        <mxCell id="status_notes" parent="aKjhhjhMuC5AKBfwfw1F-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8593A3;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=top;" value="Status and constraints" vertex="1">
+          <mxGeometry height="262" width="365.83442838370564" x="1234.1655716162943" as="geometry" />
+        </mxCell>
+        <mxCell id="desired_state" parent="status_notes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=middle;" value="DECLARED DESIRED STATE · platform currently torn down to save cost" vertex="1">
+          <mxGeometry height="50" width="315.37450722733246" x="25.2299605781866" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="constraints" parent="status_notes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#1A1A1A;fontSize=11;fontStyle=1;verticalAlign=middle;" value="FARGATE-ONLY · no EC2 nodes · no Auto Mode · no Karpenter" vertex="1">
+          <mxGeometry height="50" width="315.37450722733246" x="25.2299605781866" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="nat_note" parent="status_notes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontColor=#1A1A1A;fontSize=11;fontStyle=0;verticalAlign=middle;" value="SINGLE NAT GATEWAY · accepted cost / reliability trade-off" vertex="1">
+          <mxGeometry height="50" width="315.37450722733246" x="25.2299605781866" y="188" as="geometry" />
+        </mxCell>
+        <mxCell id="boundaries" parent="0" style="locked=1;" value="Stack boundaries (locked)" />
+        <mxCell id="shared_alb" parent="boundaries" style="rounded=0;dashed=1;fillColor=none;strokeColor=#8C4FFF;strokeWidth=1;verticalAlign=top;align=left;spacingLeft=26;spacingTop=5;fontColor=#8C4FFF;fontStyle=1;fontSize=11;" value="Shared internet-facing ALB · platform-public · HTTP :80" vertex="1">
+          <mxGeometry height="100" width="824" x="1024" y="1150" as="geometry" />
+        </mxCell>
+        <mxCell id="shared_alb_icon" parent="boundaries" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.application_load_balancer;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="1025" y="1151" as="geometry" />
+        </mxCell>
+        <mxCell id="fargate_plane" parent="boundaries" style="rounded=0;dashed=1;fillColor=none;strokeColor=#ED7100;strokeWidth=1;verticalAlign=top;align=left;spacingLeft=26;spacingTop=5;fontColor=#ED7100;fontStyle=1;fontSize=11;" value="EKS Fargate-only data plane · system · platform-addons · apps-*" vertex="1">
+          <mxGeometry height="100" width="913" x="934" y="1394" as="geometry" />
+        </mxCell>
+        <mxCell id="fargate_plane_icon" parent="boundaries" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.fargate;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="935" y="1395" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
