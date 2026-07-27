@@ -1,8 +1,21 @@
+<div align="center">
+
 # AWS EKS Fargate Platform Infrastructure
 
+**Terraform and GitOps blueprint for a serverless Amazon EKS platform running exclusively on AWS Fargate.**
+
+[![Terraform](https://img.shields.io/badge/Terraform-1.10%2B-844FBA?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Amazon EKS](https://img.shields.io/badge/Amazon%20EKS-1.35-FF9900)](https://aws.amazon.com/eks/)
+[![AWS Fargate](https://img.shields.io/badge/AWS%20Fargate-serverless-FF9900)](https://aws.amazon.com/fargate/)
+[![Argo CD](https://img.shields.io/badge/Argo%20CD-GitOps-EF7B4D?logo=argo&logoColor=white)](https://argo-cd.readthedocs.io/)
+[![Helm](https://img.shields.io/badge/Helm-charts-0F1689?logo=helm&logoColor=white)](https://helm.sh/)
+[![Kustomize](https://img.shields.io/badge/Kustomize-overlays-326CE5?logo=kubernetes&logoColor=white)](https://kustomize.io/)
+[![Jenkins](https://img.shields.io/badge/Jenkins-workload-D24939?logo=jenkins&logoColor=white)](https://www.jenkins.io/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)](.github/workflows)
+[![Checkov](https://img.shields.io/badge/Checkov-scanned-7D3C98)](https://www.checkov.io/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md)
 
-Terraform and GitOps blueprint for a serverless Amazon EKS platform running exclusively on AWS Fargate.
+</div>
 
 Run `make terraform-check` and `make yaml-check` for static validation. Use the scripts in `scripts/` and the runbooks in `docs/operations/` for deployment, acceptance, drift, and controlled destruction.
 
@@ -16,22 +29,26 @@ The repository provides one environment named `platform` with:
 - GitHub as the GitOps source of truth through AWS CodeConnections.
 - Terraform-managed S3/KMS remote state using native S3 lockfiles.
 - Fargate-compatible logging, metrics, ingress control, and rollout tooling.
+- A shared internet-facing ALB (`platform-public`) that any workload can join by Ingress annotation alone.
+- A Jenkins workload on Fargate backed by an encrypted EFS access point.
 
-Application deployments and post-parity architecture improvements are intentionally handled by separate future plans.
+Further workloads are added through separately approved service plans; the platform itself is at parity.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    Terraform --> State[S3 + KMS state]
-    Terraform --> VPC[Three-AZ VPC]
-    Terraform --> EKS[EKS control plane]
-    EKS --> Fargate[Fargate profiles]
-    GitHub --> Connections[AWS CodeConnections]
-    Connections --> Argo[Managed Argo CD]
-    Argo --> Platform[Platform GitOps configuration]
-    Fargate --> Controllers[CoreDNS and controllers]
-```
+Both diagrams describe the **declared desired state**. The platform is currently torn down to save cost, so nothing is running in AWS today. Editable sources live beside the renders in [`docs/architecture/`](docs/architecture).
+
+### AWS infrastructure
+
+Account, Region, VPC, managed services, Fargate scheduling, persistent storage, and observability.
+
+![AWS platform architecture](docs/architecture/aws-platform-architecture.png)
+
+### Kubernetes and GitOps
+
+Terraform/Argo CD ownership, the bootstrap handoff, ApplicationSet fan-out, Fargate profiles, namespaces, and the Jenkins runtime.
+
+![Kubernetes platform architecture](docs/architecture/kubernetes-platform-architecture.png)
 
 Terraform owns customer-controlled AWS resources and the minimum Argo CD bootstrap. Argo CD owns ongoing Kubernetes platform configuration. No resource is intentionally managed by both systems.
 
@@ -41,27 +58,54 @@ Terraform owns customer-controlled AWS resources and the minimum Argo CD bootstr
 | --- | --- |
 | Infrastructure | Terraform, AWS Provider, terraform-aws-modules |
 | Compute | Amazon EKS 1.35, AWS Fargate |
-| GitOps | GitHub, AWS CodeConnections, managed Argo CD |
-| Platform | ACK, kro, Argo Rollouts, AWS Load Balancer Controller |
-| Observability | CloudWatch Logs, VPC Flow Logs, ADOT |
-| Quality | TFLint, Checkov, yamllint, Helm, Kustomize, kubeconform |
+| GitOps | GitHub, AWS CodeConnections, managed Argo CD, Helm, Kustomize |
+| Platform | ACK, kro, Argo Rollouts, cert-manager, AWS Load Balancer Controller |
+| Networking | Three-AZ VPC, single NAT gateway, shared internet-facing ALB |
+| Storage | Amazon EFS access points, AWS KMS, S3 remote state |
+| Workloads | Jenkins on Fargate with EFS-backed `JENKINS_HOME` |
+| Observability | CloudWatch Logs, VPC Flow Logs, ADOT, OpenTelemetry Operator |
+| Quality | TFLint, Checkov, yamllint, Helm, Kustomize, kubeconform, GitHub Actions |
 
 ## Repository Structure
 
 ```text
-bootstrap/terraform-state/           Remote-state foundation
-environments/platform/              Single deployable Terraform root
-modules/platform_cluster/           VPC, EKS, Fargate profiles, capabilities, IAM, observability
-modules/platform_cluster_bootstrap/ Terraform-to-Argo CD handoff objects
-modules/ack_iam_role_selector/      Namespace-scoped IAM roles for ACK
-gitops/platform/bootstrap/          ApplicationSets Argo CD reconciles first
-gitops/platform/config/             Addons, observability, and kro definitions
-gitops/platform/charts/             Platform Helm charts
-gitops/workloads/                   Future service manifests
-scripts/                            Validation and operational helpers
-docs/operations/                    Deployment and recovery runbooks
-docs/superpowers/specs/             Approved architecture specifications
-docs/superpowers/plans/             Step-by-step implementation plans
+aws-eks-infra/
+├── bootstrap/
+│   └── terraform-state/                 S3 + KMS remote-state foundation (native S3 lockfiles)
+├── environments/
+│   └── platform/                        The only deployable Terraform root
+├── modules/
+│   ├── platform_cluster/                VPC, EKS, Fargate profiles, capabilities, IAM, observability
+│   │   └── policies/                    JSON IAM policy documents (ALB controller)
+│   ├── platform_cluster_bootstrap/      Terraform-to-Argo CD handoff objects
+│   └── ack_iam_role_selector/           Namespace-scoped IAM roles for ACK (not yet wired in)
+├── gitops/
+│   ├── platform/
+│   │   ├── bootstrap/                   ApplicationSets Argo CD reconciles first
+│   │   ├── config/
+│   │   │   ├── addons/                  cert-manager, ALB controller, Argo Rollouts, OTel operator
+│   │   │   ├── observability/           Fargate logging ConfigMap and ADOT collector
+│   │   │   └── kro-definitions/         kro ResourceGraphDefinitions
+│   │   └── charts/
+│   │       └── namespace-config/        Namespace, quota, limits, RBAC, NetworkPolicy chart
+│   └── workloads/
+│       ├── charts/
+│       │   └── jenkins-storage/         Static EFS StorageClass, PersistentVolume, and PVC
+│       ├── config/charts/               Argo CD Application definitions for workload charts
+│       └── manifests/                   Plain workload manifests (empty placeholder)
+├── scripts/                             Validation and operational helpers
+│   ├── verify-prerequisites.sh          Tool and AWS account preflight
+│   ├── verify-platform.sh               Acceptance checks
+│   ├── check-drift.sh                   Refresh-only drift detection
+│   └── destroy-platform.sh              Guarded teardown
+├── docs/
+│   ├── architecture/                    Architecture diagrams (.drawio sources + .png renders)
+│   ├── operations/                      Deployment, access, observability, and recovery runbooks
+│   └── superpowers/
+│       ├── specs/                       Approved architecture specifications
+│       └── plans/                       Step-by-step implementation plans
+├── .github/workflows/                   terraform-ci and yaml-ci quality gates (no AWS credentials)
+└── Makefile                             terraform-check, yaml-check, shell-check
 ```
 
 ## Prerequisites
@@ -84,8 +128,9 @@ Deployment requires:
 3. Apply `environments/platform` and authorize the GitHub connection, following [deploy the platform](docs/operations/deploy-platform.md) and [GitHub CodeConnections](docs/operations/github-connection.md).
 4. Wait for all three capabilities to report `ACTIVE` per [managed EKS capabilities](docs/operations/capabilities.md), then configure access with [cluster access](docs/operations/cluster-access.md).
 5. Run `./scripts/verify-platform.sh` as acceptance, and `./scripts/check-drift.sh` on an ongoing basis.
+6. Deploy workloads once acceptance passes — see [deploy Jenkins](docs/operations/deploy-jenkins.md) for the reference workload.
 
-Deploy services only through separately approved service plans after platform acceptance passes. [Destroying the platform](docs/operations/destroy-platform.md) is a deliberate, guarded procedure.
+Deploy further services only through separately approved service plans. [Destroying the platform](docs/operations/destroy-platform.md) is a deliberate, guarded procedure.
 
 To reach a workload from the internet, join the shared `platform-public` ALB — see [public workload access](docs/operations/public-workload-access.md). It is HTTP only and open to the world by design.
 
