@@ -16,3 +16,9 @@ override.tf.json
 .DS_Store
 .idea/
 .vscode/
+# Authoring artefacts: the design specs and task-by-task implementation plans
+# the repository was built from. Kept locally, not published.
+docs/superpowers/
+# draw.io writes these beside a diagram while it is open.
+.$*.drawio.bkp
+.$*.drawio.dtmp

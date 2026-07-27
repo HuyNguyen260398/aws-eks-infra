@@ -100,10 +100,7 @@ aws-eks-infra/
 │   └── destroy-platform.sh              Guarded teardown
 ├── docs/
 │   ├── architecture/                    Architecture diagrams (.drawio sources + .png renders)
-│   ├── operations/                      Deployment, access, observability, and recovery runbooks
-│   └── superpowers/
-│       ├── specs/                       Approved architecture specifications
-│       └── plans/                       Step-by-step implementation plans
+│   └── operations/                      Deployment, access, observability, and recovery runbooks
 ├── .github/workflows/                   terraform-ci and yaml-ci quality gates (no AWS credentials)
 └── Makefile                             terraform-check, yaml-check, shell-check
 ```
@@ -144,10 +141,6 @@ make yaml-check
 ```
 
 These are the local and CI quality gates. The `terraform-ci` and `yaml-ci` workflows run the same checks with pinned tool versions; pull-request workflows do not receive AWS credentials and never apply infrastructure. Adding a Terraform root requires updating both `TF_ROOTS` in the `Makefile` and the root list in `.github/workflows/terraform-ci.yaml`.
-
-## Background
-
-The [architecture design](docs/superpowers/specs/2026-07-18-eks-fargate-platform-recreation-design.md) and the [implementation plan](docs/superpowers/plans/2026-07-18-eks-fargate-platform-recreation.md) record the approved decisions this platform was built from.
 
 ## GitHub Protection
 

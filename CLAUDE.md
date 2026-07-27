@@ -99,4 +99,6 @@ Adding a new Terraform root means updating **both** `TF_ROOTS` in the `Makefile`
 
 ## Reference docs
 
-`docs/operations/` holds the runbooks (deploy, cluster access, capabilities, GitHub connection, observability, telemetry validation, drift/validate, destroy). `docs/superpowers/specs/` and `docs/superpowers/plans/` hold the approved architecture design and the task-by-task implementation plan this repo was built from.
+`docs/operations/` holds the runbooks (deploy, cluster access, capabilities, GitHub connection, observability, telemetry validation, drift/validate, destroy). `docs/architecture/` holds the AWS and Kubernetes architecture diagrams (`.drawio` sources plus `.png` renders).
+
+`docs/superpowers/specs/` and `docs/superpowers/plans/` hold the approved architecture design and the task-by-task implementation plan this repo was built from. They are **gitignored** — present in a local working copy but not tracked, so never link to them from tracked files such as `README.md`.
