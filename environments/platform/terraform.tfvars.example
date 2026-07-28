@@ -3,7 +3,15 @@ aws_region      = "ap-southeast-1"
 resource_prefix = "aws-eks-infra"
 vpc_cidr        = "10.0.0.0/16"
 
+# Required. Your fork of this repository - Argo CD reconciles this repository
+# through AWS CodeConnections, not the upstream one and not your working tree.
+github_owner      = "your-github-username-or-org"
+github_repository = "aws-eks-infra"
+
+# Required. Your egress address as a /32. 0.0.0.0/0 is rejected by validation.
 public_access_cidrs = ["203.0.113.10/32"]
+
+# Required. Run the aws identitystore list-users command from README.md step 2.
 argocd_admin_user_ids = [
   "IDENTITY_STORE_USER_ID",
 ]

@@ -46,9 +46,8 @@ variable "public_access_cidrs" {
 }
 
 variable "github_owner" {
-  description = "GitHub organization or user that owns the GitOps repository."
+  description = "GitHub organization or user that owns your fork of this repository."
   type        = string
-  default     = "HuyNguyen260398"
 
   validation {
     condition     = length(trimspace(var.github_owner)) > 0
@@ -57,9 +56,8 @@ variable "github_owner" {
 }
 
 variable "github_repository" {
-  description = "GitHub repository used as the GitOps source of truth."
+  description = "Name of your fork of this repository, used as the GitOps source of truth."
   type        = string
-  default     = "aws-eks-infra"
 
   validation {
     condition     = length(trimspace(var.github_repository)) > 0

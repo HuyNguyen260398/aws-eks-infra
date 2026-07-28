@@ -2,7 +2,7 @@
 
 Record of every defect found while deploying this repository from scratch for the
 first time — empty AWS account state through a healthy Jenkins workload — on
-2026-07-25 in `ap-southeast-1`, account `010382427026`.
+2026-07-25 in `ap-southeast-1`, account `<account-id>`.
 
 Ten code defects were fixed across eight pull requests. **Every one was
 invisible to static review and CI.** `make terraform-check` and `make yaml-check`

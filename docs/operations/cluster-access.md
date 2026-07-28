@@ -35,4 +35,4 @@ The node group list must be empty. The Fargate profile list must contain the sys
 
 ## Namespace contract
 
-Fargate scheduling is limited to `kube-system`, `argo-rollouts`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and future `apps-*` namespaces. Workloads outside these selectors do not receive Fargate capacity. Do not create managed node groups or other non-Fargate compute for this platform.
+Fargate scheduling is limited to `kube-system`, `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and future `apps-*` namespaces. Workloads outside these selectors do not receive Fargate capacity. Do not create managed node groups or other non-Fargate compute for this platform.

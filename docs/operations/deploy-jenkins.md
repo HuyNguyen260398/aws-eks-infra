@@ -48,7 +48,7 @@ The admin user is `admin`.
 Jenkins is served on the shared public ALB under `/jenkins`:
 
 ```bash
-aws elbv2 describe-load-balancers --names aws-eks-infra-public \
+aws elbv2 describe-load-balancers --names platform-public \
   --query 'LoadBalancers[0].DNSName' --output text
 # open http://<dns-name>/jenkins
 ```
