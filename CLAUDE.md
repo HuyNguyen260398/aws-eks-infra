@@ -77,7 +77,7 @@ The GitOps repo URL is not a plain GitHub URL — it is a CodeConnections Git-HT
 
 ### Fargate namespace contract
 
-Fargate profiles in `modules/platform_cluster/eks.tf` select only: `kube-system`, `argo-rollouts`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and `apps-*`. A Pod in any other namespace gets no capacity and stays Pending. Adding a platform component means adding its namespace to a Fargate profile selector *and* to the GitOps config in the same change.
+Fargate profiles in `modules/platform_cluster/eks.tf` select only: `kube-system`, `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and `apps-*`. A Pod in any other namespace gets no capacity and stays Pending. Adding a platform component means adding its namespace to a Fargate profile selector *and* to the GitOps config in the same change.
 
 ### Public access contract
 

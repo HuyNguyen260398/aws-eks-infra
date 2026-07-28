@@ -6,7 +6,7 @@ The `environments/platform` Terraform root creates the IAM Identity Center group
 
 - The Terraform state bootstrap is applied and its S3 bucket and KMS key outputs are available.
 - IAM Identity Center is enabled in the AWS account and the administrator Identity Store user IDs are known.
-- The operator can authorize a GitHub connection for `HuyNguyen260398/aws-eks-infra`.
+- The operator can authorize a GitHub connection for their fork, `<github_owner>/<github_repository>`.
 
 ## Configure and initialize
 
@@ -20,7 +20,7 @@ terraform -chdir=environments/platform plan -out=tfplan
 terraform -chdir=environments/platform apply tfplan
 ```
 
-After Terraform creates the connection, open AWS Developer Tools → Connections, select `aws-eks-infra-github`, and complete the GitHub authorization. Restrict the GitHub App installation to `HuyNguyen260398/aws-eks-infra`.
+After Terraform creates the connection, open AWS Developer Tools → Connections, select `<resource_prefix>-github` (`aws-eks-infra-github` with the default prefix), and complete the GitHub authorization. Restrict the GitHub App installation to the single GitOps repository, `<github_owner>/<github_repository>`.
 
 ## Verify
 
