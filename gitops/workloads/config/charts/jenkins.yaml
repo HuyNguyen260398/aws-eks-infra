@@ -74,7 +74,7 @@ spec:
                     # docs/operations/public-workload-access.md.
                     alb.ingress.kubernetes.io/group.name: platform-public
                     alb.ingress.kubernetes.io/scheme: internet-facing
-                    alb.ingress.kubernetes.io/load-balancer-name: aws-eks-infra-public
+                    alb.ingress.kubernetes.io/load-balancer-name: platform-public
                     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
                     # --- Per workload.
                     # target-type ip is the only mode EKS Fargate supports.

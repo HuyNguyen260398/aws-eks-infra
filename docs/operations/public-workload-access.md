@@ -2,13 +2,13 @@
 
 Any workload in an `apps-*` namespace can be reached from the internet by
 joining the **`platform-public` IngressGroup**. The aws-load-balancer-controller
-assembles one shared internet-facing ALB named `aws-eks-infra-public` from every
+assembles one shared internet-facing ALB named `platform-public` from every
 Ingress in the group and routes to each workload by path prefix.
 
 There is no DNS layer. You reach workloads at the ALB's AWS-assigned name:
 
 ```
-http://aws-eks-infra-public-<id>.<region>.elb.amazonaws.com
+http://platform-public-<id>.<region>.elb.amazonaws.com
   /jenkins  -> apps-jenkins/jenkins:8080
   /         -> 404
 ```
@@ -59,7 +59,7 @@ annotations:
   # --- Group-level: byte-identical on every member.
   alb.ingress.kubernetes.io/group.name: platform-public
   alb.ingress.kubernetes.io/scheme: internet-facing
-  alb.ingress.kubernetes.io/load-balancer-name: aws-eks-infra-public
+  alb.ingress.kubernetes.io/load-balancer-name: platform-public
   alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
   # --- Per workload.
   alb.ingress.kubernetes.io/target-type: ip          # the only mode Fargate supports
@@ -82,7 +82,7 @@ entirely unreachable.
 the resulting rules rather than trusting the Ingress:
 
 ```bash
-lb=$(aws elbv2 describe-load-balancers --names aws-eks-infra-public \
+lb=$(aws elbv2 describe-load-balancers --names platform-public \
   --query 'LoadBalancers[0].LoadBalancerArn' --output text)
 li=$(aws elbv2 describe-listeners --load-balancer-arn "$lb" \
   --query 'Listeners[0].ListenerArn' --output text)
@@ -117,7 +117,7 @@ its own AWS hostname, serving at `/`, at the cost of another load balancer.
 
 ```bash
 kubectl -n <namespace> get ingress                     # ADDRESS populated
-aws elbv2 describe-load-balancers --names aws-eks-infra-public \
+aws elbv2 describe-load-balancers --names platform-public \
   --query 'LoadBalancers[0].[Scheme,State.Code,DNSName]' --output text
 ```
 
