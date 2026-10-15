@@ -9,14 +9,16 @@ still review each plan, and it never touches `bootstrap/terraform-state`.
 
 ## What is destroyed, and what is kept
 
-By default the script destroys `module.platform_cluster_bootstrap` and
-`module.platform_cluster` and **preserves** the account-level resources in the
+By default the script destroys `module.platform_cluster_bootstrap` (when
+`enable_argocd` is on) and `module.platform_cluster` and **preserves** the account-level resources in the
 root:
 
 | Kept by default | Why |
 |---|---|
 | `aws_codeconnections_connection.github` | Reauthorizing the GitHub App is a manual console step that cannot be automated. Destroying the connection adds it back to the next deploy. |
 | `aws_identitystore_group.argocd_admins` and its membership | Cheap to keep, and the group ID is referenced by the Argo CD capability's RBAC mapping. |
+| `aws_budgets_budget.account_monthly` | The cost alarm should outlive the platform it guards. |
+| The SSM parameters under `/<prefix>/platform/` are destroyed with the cluster | They describe the cluster and would be stale without it. |
 
 To remove them too:
 
@@ -39,7 +41,7 @@ The script refuses if any of these exist:
 1. **Workload Applications** — any Argo CD Application with a source path under
    `gitops/workloads`. This checks both `.spec.source.path` and every entry of
    `.spec.sources[].path`; a multi-source Application leaves `.spec.source` null,
-   so checking only the singular field silently misses workloads like Jenkins.
+   so checking only the singular field silently misses multi-source workloads.
 2. **Ingress objects.**
 3. **LoadBalancer Services.**
 

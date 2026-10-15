@@ -82,3 +82,8 @@ output "platform_parameter_prefix" {
   description = "SSM parameter path under which the platform publishes identifiers for workload repositories."
   value       = local.platform_parameter_prefix
 }
+
+output "argocd_enabled" {
+  description = "Whether the managed Argo CD capability and GitOps bootstrap are deployed."
+  value       = var.enable_argocd
+}

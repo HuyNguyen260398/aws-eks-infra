@@ -1,5 +1,10 @@
 # First end-to-end deployment: defects found and fixed
 
+> **Historical.** These defects were found deploying the original Fargate-only
+> reference platform. The platform now runs on a single EC2 node with no
+> Fargate, Jenkins, ACK or kro, so the Fargate- and Jenkins-specific entries no
+> longer apply. The Argo CD and Terraform lessons still do.
+
 Record of every defect found while deploying this repository from scratch for the
 first time — empty AWS account state through a healthy Jenkins workload — on
 2026-07-25 in `ap-southeast-1`, account `<account-id>`.

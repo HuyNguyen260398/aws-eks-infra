@@ -1,20 +1,18 @@
 # Workloads
 
-Example and tenant workloads reconciled by Argo CD.
+Workloads reconciled by Argo CD from this repository. Cashight itself is
+deployed from its own repository (its Argo CD Application is added with the
+Cashight deployment plan).
 
 ## Layout
 
 - `manifests/` — plain-manifest or Kustomize workloads, recursed by the
   `platform-workloads` ApplicationSet (`gitops/platform/bootstrap/config-workloads.yaml`).
-- `charts/` — local Helm charts for workloads (for example `jenkins-storage`).
-- `config/charts/` — ApplicationSets that deploy Helm-chart workloads, reconciled
-  by the `platform-workload-charts` ApplicationSet
-  (`gitops/platform/bootstrap/config-workload-charts.yaml`).
+  Empty today.
 
 ## Contract
 
-Workloads either use `apps-*` namespaces (Fargate capacity, Fargate-compatible
-security contexts, ALB IP targets — Jenkins in `apps-jenkins` is the example,
-see `docs/operations/deploy-jenkins.md`), or a tenant namespace declared in
-`gitops/platform/config/namespaces/values.yaml` (EC2 capacity, Pod Security
-`restricted`, default-deny NetworkPolicies the workload must open itself).
+Workloads run in a tenant namespace declared in
+`gitops/platform/config/namespaces/values.yaml`: Pod Security `restricted`,
+default-deny ingress and egress NetworkPolicies that the workload must open
+itself, and a LimitRange and ResourceQuota sized for the single node.
