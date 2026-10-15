@@ -15,3 +15,8 @@ public_access_cidrs = ["203.0.113.10/32"]
 argocd_admin_user_ids = [
   "IDENTITY_STORE_USER_ID",
 ]
+
+# Required. Account-wide monthly cost budget alerts. The platform alone costs
+# roughly USD 345/month (control plane, three t4g.large nodes, NAT, ALB).
+budget_notification_emails = ["you@example.com"]
+# monthly_budget_usd       = 400

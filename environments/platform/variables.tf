@@ -97,3 +97,26 @@ variable "argocd_admin_user_ids" {
   }
 }
 
+
+variable "monthly_budget_usd" {
+  description = "Account-wide monthly cost budget in USD. Alerts fire at 50%, 80% and 100% of actual spend and at 100% of forecast spend."
+  type        = number
+  default     = 400
+
+  validation {
+    condition     = var.monthly_budget_usd > 0
+    error_message = "monthly_budget_usd must be greater than zero."
+  }
+}
+
+variable "budget_notification_emails" {
+  description = "Email addresses notified by the account budget. AWS Budgets sends to them directly; no subscription confirmation is needed."
+  type        = set(string)
+
+  validation {
+    condition = length(var.budget_notification_emails) > 0 && alltrue([
+      for email in var.budget_notification_emails : can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", email))
+    ])
+    error_message = "budget_notification_emails must contain at least one valid email address."
+  }
+}
