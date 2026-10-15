@@ -28,6 +28,8 @@ helm-check:
 		helm lint gitops/platform/charts/namespace-config -f gitops/platform/charts/namespace-config/values-test.yaml; \
 		helm template namespace-config gitops/platform/charts/namespace-config -f gitops/platform/charts/namespace-config/values-test.yaml > /tmp/namespace-config-rendered.yaml; \
 		kubeconform -strict -summary -ignore-missing-schemas /tmp/namespace-config-rendered.yaml; \
+		helm template namespaces gitops/platform/charts/namespace-config -f gitops/platform/config/namespaces/values.yaml > /tmp/namespaces-rendered.yaml; \
+		kubeconform -strict -summary -ignore-missing-schemas /tmp/namespaces-rendered.yaml; \
 	fi
 	@if [ -f gitops/workloads/charts/jenkins-storage/Chart.yaml ]; then \
 		helm lint gitops/workloads/charts/jenkins-storage -f gitops/workloads/charts/jenkins-storage/values-test.yaml; \
