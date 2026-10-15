@@ -51,7 +51,6 @@ jobs:
             environments/platform
             modules/platform_cluster
             modules/platform_cluster_bootstrap
-            modules/ack_iam_role_selector
           )
           for root in "${roots[@]}"; do
             test -f "$root/versions.tf" || continue

@@ -34,7 +34,8 @@ spec:
             clusterName: '{{ .metadata.labels.cluster_name }}'
             region: '{{ .metadata.annotations.aws_region }}'
             vpcId: '{{ .metadata.annotations.vpc_id }}'
-            replicaCount: 2
+            # One node, so a second replica would add memory and no availability.
+            replicaCount: 1
             # Let cert-manager issue the admission webhook certificate.
             #
             # Without this the chart mints a self-signed CA at render time, so

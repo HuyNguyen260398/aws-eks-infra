@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: platform-kro-definitions
+  name: platform-namespaces
   namespace: argocd
 spec:
   # Required: the template below uses Go-template syntax ({{ .name }},
@@ -15,21 +15,27 @@ spec:
     - clusters:
         selector:
           matchLabels:
-            platform_cluster: "true"
+            workload_cluster: "true"
   template:
     metadata:
-      name: '{{ .name }}-platform-kro-definitions'
+      name: '{{ .name }}-platform-namespaces'
     spec:
       project: default
       source:
         repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
         targetRevision: '{{ .metadata.annotations.gitops_revision }}'
-        path: gitops/platform/config/kro-definitions
+        path: gitops/platform/charts/namespace-config
+        helm:
+          releaseName: namespaces
+          # Relative to the chart path; stays inside this repository.
+          valueFiles:
+            - ../../config/namespaces/values.yaml
       destination:
         server: '{{ .server }}'
-        namespace: argocd
+        namespace: default
       syncPolicy:
         automated:
-          allowEmpty: true
+          prune: true
+          selfHeal: true
         syncOptions:
           - ServerSideApply=true

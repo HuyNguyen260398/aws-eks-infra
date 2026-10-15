@@ -1,22 +1,33 @@
 #!/usr/bin/env bash
 # Platform acceptance. See docs/operations/validate-platform.md.
 #
-# Two groups of assertions:
+# Three groups of assertions:
 #
-#   Platform invariants  always checked. Fargate only, capabilities ACTIVE,
-#                        controllers rolled out, Applications converged.
-#   Greenfield non-goals only meaningful before any workload is deployed - no
-#                        apps-* Pods, no Ingress, no LoadBalancer Service.
+#   Platform invariants  always checked. Cluster, node group and node, EKS
+#                        add-ons, no Fargate, identifiers published.
+#   GitOps               only when enable_argocd is on: the Argo CD capability,
+#                        the add-ons it installs (load balancer controller,
+#                        cert-manager, Argo Rollouts, KEDA), Applications
+#                        converged, tenant namespaces guarded.
+#   Workloads            with GitOps on. Greenfield by default - no workload
+#                        Pods, no Ingress, no LoadBalancer Service. Set
+#                        EXPECT_WORKLOADS=true once Cashight is deployed; the
+#                        non-goals are then replaced by namespace-contract
+#                        checks.
 #
-# The non-goals were unconditional, so the script reported FAIL the moment a
-# workload it was supposed to host actually ran. Set EXPECT_WORKLOADS=true once
-# the platform hosts workloads; the non-goal assertions are then replaced by
-# checks that workloads stay inside the Fargate namespace contract.
+# EXPECTED_NODES is the node group size (default 1). WORKLOAD_NAMESPACES lists
+# the tenant namespaces declared in gitops/platform/config/namespaces/values.yaml
+# (default "cashight").
 set -euo pipefail
 
 cluster="${CLUSTER_NAME:-$(terraform -chdir=environments/platform output -raw cluster_name)}"
 region="${AWS_REGION:-$(aws configure get region)}"
+parameter_prefix="${PARAMETER_PREFIX:-$(terraform -chdir=environments/platform output -raw platform_parameter_prefix)}"
+argocd_enabled="${ARGOCD_ENABLED:-$(terraform -chdir=environments/platform output -raw argocd_enabled)}"
 EXPECT_WORKLOADS="${EXPECT_WORKLOADS:-false}"
+EXPECTED_NODES="${EXPECTED_NODES:-1}"
+read -r -a workload_namespaces <<<"${WORKLOAD_NAMESPACES:-cashight}"
+nodegroup="${cluster}-general"
 
 fail=0
 pass() { echo "PASS $1"; }
@@ -25,7 +36,7 @@ fail_line() {
   fail=1
 }
 assert_eq() {
-  if [ "$2" = "$3" ]; then pass "$1"; else fail_line "$1"; fi
+  if [ "$2" = "$3" ]; then pass "$1"; else fail_line "$1 (got '$2', want '$3')"; fi
 }
 # $2 is a newline-separated list that must be empty; offenders are named.
 assert_empty() {
@@ -37,19 +48,43 @@ assert_empty() {
 connection="$(terraform -chdir=environments/platform output -raw github_connection_arn)"
 assert_eq "CodeConnections AVAILABLE" "$(aws codeconnections get-connection --connection-arn "$connection" --query 'Connection.ConnectionStatus' --output text)" AVAILABLE
 assert_eq "EKS ACTIVE" "$(aws eks describe-cluster --name "$cluster" --region "$region" --query 'cluster.status' --output text)" ACTIVE
-if aws eks list-fargate-profiles --cluster-name "$cluster" --region "$region" --query 'fargateProfileNames[]' --output text | xargs -n1 -I{} aws eks describe-fargate-profile --cluster-name "$cluster" --fargate-profile-name {} --region "$region" --query 'fargateProfile.status' --output text | grep -qv '^ACTIVE$'; then fail_line "Fargate profiles ACTIVE"; else pass "Fargate profiles ACTIVE"; fi
-assert_eq "No node groups" "$(aws eks list-nodegroups --cluster-name "$cluster" --region "$region" --query 'length(nodegroups)' --output text)" 0
+assert_eq "No Fargate profiles" "$(aws eks list-fargate-profiles --cluster-name "$cluster" --region "$region" --query 'length(fargateProfileNames)' --output text)" 0
 
-# A node group is not the only way EC2 capacity can appear. Assert the compute
-# type directly: every node that exists must be Fargate.
-non_fargate="$(
-  kubectl get nodes -o json |
-    jq -r '.items[] | select(.metadata.labels["eks.amazonaws.com/compute-type"] != "fargate") | .metadata.name'
-)"
-assert_empty "All nodes Fargate" "$non_fargate"
+# --- Capacity: exactly the general node group, Graviton.
+assert_eq "Node group ${nodegroup} ACTIVE" "$(aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "$nodegroup" --region "$region" --query 'nodegroup.status' --output text)" ACTIVE
+nodes="$(kubectl get nodes -o json | jq '.items')"
+assert_eq "Nodes Ready" "$(jq '[.[] | select(any(.status.conditions[]; .type == "Ready" and .status == "True"))] | length' <<<"$nodes")" "$EXPECTED_NODES"
+assert_empty "Nodes are arm64 members of ${nodegroup}" "$(jq -r --arg ng "$nodegroup" '.[] | select(.metadata.labels["kubernetes.io/arch"] != "arm64" or .metadata.labels["eks.amazonaws.com/nodegroup"] != $ng) | .metadata.name' <<<"$nodes")"
+# Prefix delegation only helps if the kubelet ceiling was raised with it; a
+# small instance otherwise stops scheduling at 17 Pods.
+assert_empty "Nodes allow 110 Pods" "$(jq -r '.[] | select(.status.capacity.pods != "110") | "\(.metadata.name)=\(.status.capacity.pods)"' <<<"$nodes")"
 
-for capability in argocd ack kro; do assert_eq "${capability} capability ACTIVE" "$(aws eks describe-capability --cluster-name "$cluster" --capability-name "${cluster}-${capability}" --region "$region" --query 'capability.status' --output text)" ACTIVE; done
-for deployment in 'kube-system coredns' 'kube-system aws-load-balancer-controller' 'argo-rollouts argo-rollouts' 'cert-manager cert-manager' 'cert-manager cert-manager-webhook' 'opentelemetry-operator-system opentelemetry-operator'; do
+# --- EKS add-ons. Without enableNetworkPolicy the VPC CNI accepts
+# NetworkPolicy objects and silently enforces none of them.
+for addon in vpc-cni kube-proxy eks-pod-identity-agent coredns; do
+  assert_eq "Add-on ${addon} ACTIVE" "$(aws eks describe-addon --cluster-name "$cluster" --addon-name "$addon" --region "$region" --query 'addon.status' --output text)" ACTIVE
+done
+cni_config="$(aws eks describe-addon --cluster-name "$cluster" --addon-name vpc-cni --region "$region" --query 'addon.configurationValues' --output text)"
+assert_eq "VPC CNI enforces NetworkPolicy" "$(jq -r '.enableNetworkPolicy // "unset"' <<<"$cni_config")" true
+assert_eq "VPC CNI uses prefix delegation" "$(jq -r '.env.ENABLE_PREFIX_DELEGATION // "unset"' <<<"$cni_config")" true
+if kubectl -n kube-system rollout status deployment/coredns --timeout=5m >/dev/null; then pass "Deployment kube-system/coredns"; else fail_line "Deployment kube-system/coredns"; fi
+
+# --- Identifiers published for workload repositories.
+for parameter in cluster-name alb-group-name keda-operator-role-arn codeconnections-git-http-base; do
+  value="$(aws ssm get-parameter --name "${parameter_prefix}/${parameter}" --region "$region" --query 'Parameter.Value' --output text 2>/dev/null || true)"
+  if [ -n "$value" ] && [ "$value" != None ]; then pass "SSM ${parameter_prefix}/${parameter}"; else fail_line "SSM ${parameter_prefix}/${parameter}"; fi
+done
+assert_eq "Published cluster-name matches" "$(aws ssm get-parameter --name "${parameter_prefix}/cluster-name" --region "$region" --query 'Parameter.Value' --output text 2>/dev/null || true)" "$cluster"
+
+if [ "$argocd_enabled" != true ]; then
+  echo "SKIP GitOps and workload checks (enable_argocd = false)"
+  exit "$fail"
+fi
+
+# ------------------------------------------------------------------ gitops ---
+
+assert_eq "argocd capability ACTIVE" "$(aws eks describe-capability --cluster-name "$cluster" --capability-name "${cluster}-argocd" --region "$region" --query 'capability.status' --output text)" ACTIVE
+for deployment in 'kube-system aws-load-balancer-controller' 'argo-rollouts argo-rollouts' 'cert-manager cert-manager' 'cert-manager cert-manager-webhook' 'keda keda-operator' 'keda keda-operator-metrics-apiserver' 'keda keda-admission-webhooks'; do
   read -r ns name <<<"$deployment"
   if kubectl -n "$ns" rollout status deployment/"$name" --timeout=5m >/dev/null; then
     pass "Deployment $ns/$name"
@@ -57,6 +92,8 @@ for deployment in 'kube-system coredns' 'kube-system aws-load-balancer-controlle
     fail_line "Deployment $ns/$name"
   fi
 done
+
+assert_eq "KEDA external metrics APIService Available" "$(kubectl get apiservice v1beta1.external.metrics.k8s.io -o jsonpath='{.status.conditions[?(@.type=="Available")].status}')" True
 
 # `all` on an empty array is vacuously true, so an empty argocd namespace used to
 # pass this. Require at least one Application as well.
@@ -75,33 +112,46 @@ else
   '
 fi
 
+# --- Tenant namespaces: restricted Pod Security, default-deny, a quota.
+for ns in "${workload_namespaces[@]}"; do
+  assert_eq "Namespace ${ns} enforces restricted Pod Security" "$(kubectl get namespace "$ns" -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null || true)" restricted
+  policies=" $(kubectl -n "$ns" get networkpolicy -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true) "
+  for policy in tenant-ingress-deny-all tenant-egress-deny-all tenant-egress-allow-dns; do
+    if [[ "$policies" == *" ${policy} "* ]]; then pass "NetworkPolicy ${ns}/${policy}"; else fail_line "NetworkPolicy ${ns}/${policy}"; fi
+  done
+  assert_eq "ResourceQuota in ${ns}" "$(kubectl -n "$ns" get resourcequota -o json 2>/dev/null | jq '.items | length')" 1
+done
+
 # --------------------------------------------------------------- workloads ---
 
-# Namespaces a Fargate profile selects, per modules/platform_cluster/eks.tf.
-platform_namespaces='^(kube-system|argo-rollouts|cert-manager|opentelemetry-operator-system|amazon-cloudwatch|argocd|kube-public|kube-node-lease|default)$'
+# Namespaces the platform itself runs in.
+platform_namespaces='^(kube-system|argo-rollouts|cert-manager|keda|argocd|kube-public|kube-node-lease|default)$'
+tenants_json="$(printf '%s\n' "${workload_namespaces[@]}" | jq -R . | jq -s .)"
+# A workload Pod lives in an apps-* namespace or a tenant namespace.
+workload_filter="(.metadata.namespace | startswith(\"apps-\")) or (.metadata.namespace as \$ns | \$tenants | index(\$ns) != null)"
 
 if [ "$EXPECT_WORKLOADS" = true ]; then
   # Workloads are allowed. Assert they respect the namespace contract and are
   # actually running, rather than asserting they do not exist.
   stray="$(
     kubectl get pods -A -o json |
-      jq -r --arg re "$platform_namespaces" '
+      jq -r --arg re "$platform_namespaces" --argjson tenants "$tenants_json" "
         .items[]
-        | select((.metadata.namespace | test($re)) | not)
-        | select((.metadata.namespace | startswith("apps-")) | not)
-        | "\(.metadata.namespace)/\(.metadata.name)"
-      '
+        | select((.metadata.namespace | test(\$re)) | not)
+        | select(($workload_filter) | not)
+        | \"\(.metadata.namespace)/\(.metadata.name)\"
+      "
   )"
-  assert_empty "Workload Pods confined to apps-*" "$stray"
+  assert_empty "Workload Pods confined to apps-* and tenant namespaces" "$stray"
 
   unhealthy="$(
     kubectl get pods -A -o json |
-      jq -r '
+      jq -r --argjson tenants "$tenants_json" "
         .items[]
-        | select(.metadata.namespace | startswith("apps-"))
-        | select(.status.phase != "Running" and .status.phase != "Succeeded")
-        | "\(.metadata.namespace)/\(.metadata.name) \(.status.phase)"
-      '
+        | select($workload_filter)
+        | select(.status.phase != \"Running\" and .status.phase != \"Succeeded\")
+        | \"\(.metadata.namespace)/\(.metadata.name) \(.status.phase)\"
+      "
   )"
   assert_empty "Workload Pods Running" "$unhealthy"
 
@@ -113,7 +163,7 @@ if [ "$EXPECT_WORKLOADS" = true ]; then
   assert_empty "Ingresses have load balancer addresses" "$pending"
 else
   # Greenfield non-goals: nothing is hosted yet.
-  assert_eq "No service workloads" "$(kubectl get pods -A -o json | jq '[.items[] | select(.metadata.namespace | startswith("apps-"))] | length')" 0
+  assert_eq "No service workloads" "$(kubectl get pods -A -o json | jq --argjson tenants "$tenants_json" "[.items[] | select($workload_filter)] | length")" 0
   assert_eq "No Ingress" "$(kubectl get ingress -A -o json | jq '.items | length')" 0
   assert_eq "No LoadBalancer Service" "$(kubectl get svc -A -o json | jq '[.items[] | select(.spec.type == "LoadBalancer")] | length')" 0
 fi

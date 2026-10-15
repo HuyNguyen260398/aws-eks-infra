@@ -2,7 +2,6 @@ extends: default
 
 ignore: |
   gitops/platform/charts/namespace-config/templates/
-  gitops/workloads/charts/jenkins-storage/templates/
   .terraform/
 
 rules:

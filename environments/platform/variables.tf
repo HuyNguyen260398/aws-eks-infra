@@ -97,3 +97,50 @@ variable "argocd_admin_user_ids" {
   }
 }
 
+
+variable "monthly_budget_usd" {
+  description = "Account-wide monthly cost budget in USD. Alerts fire at 50%, 80% and 100% of actual spend and at 100% of forecast spend."
+  type        = number
+  default     = 400
+
+  validation {
+    condition     = var.monthly_budget_usd > 0
+    error_message = "monthly_budget_usd must be greater than zero."
+  }
+}
+
+variable "budget_notification_emails" {
+  description = "Email addresses notified by the account budget. AWS Budgets sends to them directly; no subscription confirmation is needed."
+  type        = set(string)
+
+  validation {
+    condition = length(var.budget_notification_emails) > 0 && alltrue([
+      for email in var.budget_notification_emails : can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", email))
+    ])
+    error_message = "budget_notification_emails must contain at least one valid email address."
+  }
+}
+
+variable "node_instance_types" {
+  description = "Graviton (arm64) EC2 instance types for the node group, all the same size. t4g.medium (2 vCPU, 4 GiB) is the cheapest Spot pool; add c6g.large and c7g.large (same size, about twice the Spot price) if Spot capacity runs short."
+  type        = list(string)
+  default     = ["t4g.medium"]
+}
+
+variable "node_capacity_type" {
+  description = "Capacity type of the node group: SPOT (cheapest; an interruption replaces the node) or ON_DEMAND."
+  type        = string
+  default     = "SPOT"
+}
+
+variable "node_count" {
+  description = "Fixed size of the node group. One node runs the whole platform; raise it when Pods stop fitting."
+  type        = number
+  default     = 1
+}
+
+variable "enable_argocd" {
+  description = "Create the managed Argo CD capability and the GitOps bootstrap. Off by default: the capability costs about USD 27/month plus about USD 1.32 per Argo CD Application/month, so turn it on when there is something to deploy."
+  type        = bool
+  default     = false
+}

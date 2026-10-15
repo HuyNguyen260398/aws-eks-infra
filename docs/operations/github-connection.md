@@ -20,7 +20,7 @@ terraform -chdir=environments/platform plan -out=tfplan
 terraform -chdir=environments/platform apply tfplan
 ```
 
-After Terraform creates the connection, open AWS Developer Tools → Connections, select `<resource_prefix>-github` (`aws-eks-infra-github` with the default prefix), and complete the GitHub authorization. Restrict the GitHub App installation to the single GitOps repository, `<github_owner>/<github_repository>`.
+After Terraform creates the connection, open AWS Developer Tools → Connections, select `<resource_prefix>-github` (`aws-eks-infra-github` with the default prefix), and complete the GitHub authorization. Restrict the GitHub App installation to the GitOps repository, `<github_owner>/<github_repository>`, plus each workload repository Argo CD must read. The connection's ARN is the only thing the Argo CD capability role can use, so the installation's repository list is the access boundary. After adding a repository, prove access with `./scripts/check-repo-access.sh <owner> <repo> <revision> <docs-path>`.
 
 ## Verify
 

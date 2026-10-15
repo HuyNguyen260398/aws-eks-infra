@@ -6,15 +6,16 @@ locals {
   identity_store_id            = one(data.aws_ssoadmin_instances.current.identity_store_ids)
   identity_center_instance_arn = one(data.aws_ssoadmin_instances.current.arns)
   connection_id                = element(reverse(split("/", aws_codeconnections_connection.github.arn)), 0)
-  gitops_repo_url = format(
-    "https://codeconnections.%s.amazonaws.com/git-http/%s/%s/%s/%s/%s.git",
+  # Base Git-HTTP endpoint of the CodeConnections connection. Any repository
+  # the connection's GitHub App installation can see is <base>/<owner>/<repo>.git.
+  codeconnections_git_http_base = format(
+    "https://codeconnections.%s.amazonaws.com/git-http/%s/%s/%s",
     var.aws_region,
     data.aws_caller_identity.current.account_id,
     var.aws_region,
     local.connection_id,
-    var.github_owner,
-    var.github_repository,
   )
+  gitops_repo_url = "${local.codeconnections_git_http_base}/${var.github_owner}/${var.github_repository}.git"
   tags = {
     Environment = "platform"
     ManagedBy   = "Terraform"
@@ -68,6 +69,10 @@ module "platform_cluster" {
   environment                  = "platform"
   vpc_cidr                     = var.vpc_cidr
   kubernetes_version           = var.kubernetes_version
+  node_instance_types          = var.node_instance_types
+  node_capacity_type           = var.node_capacity_type
+  node_count                   = var.node_count
+  enable_argocd                = var.enable_argocd
   public_access_cidrs          = var.public_access_cidrs
   identity_store_id            = local.identity_store_id
   identity_center_instance_arn = local.identity_center_instance_arn
@@ -77,8 +82,11 @@ module "platform_cluster" {
   tags                         = local.tags
 }
 
+# The Terraform -> Argo CD handoff. Only meaningful once the managed Argo CD
+# capability exists; see docs/operations/deploy-platform.md.
 module "platform_cluster_bootstrap" {
   source = "../../modules/platform_cluster_bootstrap"
+  count  = var.enable_argocd ? 1 : 0
 
   cluster_name                          = module.platform_cluster.cluster_name
   cluster_arn                           = module.platform_cluster.cluster_arn
@@ -89,10 +97,6 @@ module "platform_cluster_bootstrap" {
   vpc_id                                = module.platform_cluster.vpc_id
   aws_region                            = var.aws_region
   aws_load_balancer_controller_role_arn = module.platform_cluster.aws_load_balancer_controller_role_arn
-  adot_role_arn                         = module.platform_cluster.adot_role_arn
-  fargate_log_group_name                = module.platform_cluster.fargate_log_group_name
-  efs_file_system_id                    = module.platform_cluster.efs_file_system_id
-  jenkins_efs_access_point_id           = module.platform_cluster.jenkins_efs_access_point_id
 
   depends_on = [module.platform_cluster]
 }

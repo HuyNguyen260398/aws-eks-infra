@@ -20,11 +20,9 @@
 # fails. Keep the lists minimal and justify each entry.
 set -euo pipefail
 
-# aws_efs_file_system.size_in_bytes: metered capacity. Jenkins writing to
-# /jenkins-home moves it on every refresh; it is not settable in configuration.
-IGNORED_DRIFT_ATTRS='{
-  "aws_efs_file_system": ["size_in_bytes"]
-}'
+# Empty today. Add "<resource type>": ["<attribute>"] here, with a comment
+# saying why, when a read-only counter shows up in every refresh.
+IGNORED_DRIFT_ATTRS='{}'
 
 plan_dir="$(mktemp -d)"
 trap 'rm -rf "$plan_dir"' EXIT

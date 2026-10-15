@@ -48,6 +48,11 @@ variable "argocd_admin_group_id" {
   type        = string
 }
 
+variable "enable_argocd" {
+  description = "Create the managed Argo CD capability, its IAM role and its cluster-admin access entry."
+  type        = bool
+}
+
 variable "github_connection_arn" {
   description = "ARN of the AWS CodeConnections GitHub connection used by managed Argo CD."
   type        = string
@@ -61,4 +66,38 @@ variable "gitops_repo_url" {
 variable "tags" {
   description = "Tags applied to platform cluster resources."
   type        = map(string)
+}
+
+variable "node_instance_types" {
+  description = "Graviton (arm64) EC2 instance types the node group may use. List several of the same size so Spot can draw from more pools."
+  type        = list(string)
+
+  validation {
+    # Graviton families carry a "g" right after the generation number:
+    # t4g, m7g, c7gn, r8gd. x86 types such as m5 or g5 do not match.
+    condition = length(var.node_instance_types) > 0 && alltrue([
+      for type in var.node_instance_types : can(regex("^[a-z]+[0-9]+g[a-z]*\\.[a-z0-9]+$", type))
+    ])
+    error_message = "node_instance_types must list Graviton (arm64) types such as t4g.medium; the node group uses an arm64 AMI."
+  }
+}
+
+variable "node_capacity_type" {
+  description = "Capacity type of the node group: SPOT or ON_DEMAND."
+  type        = string
+
+  validation {
+    condition     = contains(["SPOT", "ON_DEMAND"], var.node_capacity_type)
+    error_message = "node_capacity_type must be SPOT or ON_DEMAND."
+  }
+}
+
+variable "node_count" {
+  description = "Fixed size of the general-purpose managed node group. Nodes spread across the three private subnets."
+  type        = number
+
+  validation {
+    condition     = var.node_count >= 1 && var.node_count <= 10 && floor(var.node_count) == var.node_count
+    error_message = "node_count must be a whole number from 1 to 10."
+  }
 }

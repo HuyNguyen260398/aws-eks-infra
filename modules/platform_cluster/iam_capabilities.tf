@@ -22,28 +22,18 @@ data "aws_iam_policy_document" "argocd_codeconnections" {
 }
 
 resource "aws_iam_role" "argocd_capability" {
+  count = var.enable_argocd ? 1 : 0
+
   name               = "${local.cluster_name}-argocd-capability"
   assume_role_policy = data.aws_iam_policy_document.capability_assume_role.json
 
   tags = var.tags
 }
 
-resource "aws_iam_role" "ack_capability" {
-  name               = "${local.cluster_name}-ack-capability"
-  assume_role_policy = data.aws_iam_policy_document.capability_assume_role.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role" "kro_capability" {
-  name               = "${local.cluster_name}-kro-capability"
-  assume_role_policy = data.aws_iam_policy_document.capability_assume_role.json
-
-  tags = var.tags
-}
-
 resource "aws_iam_role_policy" "argocd_codeconnections" {
+  count = var.enable_argocd ? 1 : 0
+
   name   = "${local.cluster_name}-argocd-codeconnections"
-  role   = aws_iam_role.argocd_capability.id
+  role   = aws_iam_role.argocd_capability[0].id
   policy = data.aws_iam_policy_document.argocd_codeconnections.json
 }

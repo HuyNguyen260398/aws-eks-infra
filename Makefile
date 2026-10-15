@@ -1,6 +1,6 @@
 .PHONY: terraform-fmt terraform-validate terraform-lint terraform-check yaml-lint helm-check kustomize-check yaml-check shell-check verify-prerequisites verify-platform check-drift
 
-TF_ROOTS := bootstrap/terraform-state environments/platform modules/platform_cluster modules/platform_cluster_bootstrap modules/ack_iam_role_selector
+TF_ROOTS := bootstrap/terraform-state environments/platform modules/platform_cluster modules/platform_cluster_bootstrap
 
 terraform-fmt:
 	terraform fmt -check -recursive
@@ -28,11 +28,8 @@ helm-check:
 		helm lint gitops/platform/charts/namespace-config -f gitops/platform/charts/namespace-config/values-test.yaml; \
 		helm template namespace-config gitops/platform/charts/namespace-config -f gitops/platform/charts/namespace-config/values-test.yaml > /tmp/namespace-config-rendered.yaml; \
 		kubeconform -strict -summary -ignore-missing-schemas /tmp/namespace-config-rendered.yaml; \
-	fi
-	@if [ -f gitops/workloads/charts/jenkins-storage/Chart.yaml ]; then \
-		helm lint gitops/workloads/charts/jenkins-storage -f gitops/workloads/charts/jenkins-storage/values-test.yaml; \
-		helm template jenkins-storage gitops/workloads/charts/jenkins-storage -f gitops/workloads/charts/jenkins-storage/values-test.yaml > /tmp/jenkins-storage-rendered.yaml; \
-		kubeconform -strict -summary -ignore-missing-schemas /tmp/jenkins-storage-rendered.yaml; \
+		helm template namespaces gitops/platform/charts/namespace-config -f gitops/platform/config/namespaces/values.yaml > /tmp/namespaces-rendered.yaml; \
+		kubeconform -strict -summary -ignore-missing-schemas /tmp/namespaces-rendered.yaml; \
 	fi
 
 kustomize-check:

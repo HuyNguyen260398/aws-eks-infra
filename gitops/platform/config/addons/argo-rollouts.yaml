@@ -28,6 +28,9 @@ spec:
         helm:
           releaseName: argo-rollouts
           values: |
+            # One node, so a second replica would add memory and no availability.
+            controller:
+              replicas: 1
             dashboard:
               enabled: false
       # The chart ships preserveUnknownFields: false, which the API server

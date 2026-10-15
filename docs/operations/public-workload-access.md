@@ -1,6 +1,6 @@
 # Exposing a workload to the internet
 
-Any workload in an `apps-*` namespace can be reached from the internet by
+Any workload can be reached from the internet by
 joining the **`platform-public` IngressGroup**. The aws-load-balancer-controller
 assembles one shared internet-facing ALB named `platform-public` from every
 Ingress in the group and routes to each workload by path prefix.
@@ -9,7 +9,7 @@ There is no DNS layer. You reach workloads at the ALB's AWS-assigned name:
 
 ```
 http://platform-public-<id>.<region>.elb.amazonaws.com
-  /jenkins  -> apps-jenkins/jenkins:8080
+  /<prefix> -> <namespace>/<service>:<port>
   /         -> 404
 ```
 
@@ -27,7 +27,7 @@ no resource is managed by both sides.
 
 | Piece | Owner |
 |---|---|
-| The Ingress and its annotations | Argo CD (`gitops/workloads/config/charts/*.yaml`) |
+| The Ingress and its annotations | Argo CD (`gitops/workloads/` or the workload's own repository) |
 | The shared ALB, listener, rules, target groups | aws-load-balancer-controller |
 | Public subnets tagged `kubernetes.io/role/elb=1` | Terraform (`modules/platform_cluster/vpc.tf`) |
 | The controller's IRSA role | Terraform (`modules/platform_cluster/iam_load_balancer_controller.tf`) |
@@ -41,8 +41,7 @@ kubectl get ingressclass alb
 kubectl -n kube-system get deploy aws-load-balancer-controller
 ```
 
-The workload's namespace must match an `apps-*` Fargate profile selector, or its
-Pods stay Pending with no capacity.
+The controller is installed by Argo CD, so `enable_argocd` must be on.
 
 ## The opt-in contract
 
@@ -62,12 +61,12 @@ annotations:
   alb.ingress.kubernetes.io/load-balancer-name: platform-public
   alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
   # --- Per workload.
-  alb.ingress.kubernetes.io/target-type: ip          # the only mode Fargate supports
+  alb.ingress.kubernetes.io/target-type: ip          # route straight to Pod IPs
   alb.ingress.kubernetes.io/group.order: '20'        # unique, -1000..1000, lower evaluated first
   alb.ingress.kubernetes.io/healthcheck-path: /<prefix>/<health-endpoint>
 ```
 
-`group.order` values in use: Jenkins `10`. Pick an unused number.
+`group.order` values in use: none yet. Pick an unused number.
 
 ### `pathType` must be `Prefix`
 
@@ -92,8 +91,7 @@ aws elbv2 describe-rules --listener-arn "$li" \
 
 ### Keep Argo CD placeholders out of the annotations
 
-Charts commonly run Helm's `tpl` over `ingress.annotations` — the Jenkins chart
-does. A `{{ .metadata.annotations.foo }}` placeholder left in an annotation is
+Charts commonly run Helm's `tpl` over `ingress.annotations`. A `{{ .metadata.annotations.foo }}` placeholder left in an annotation is
 therefore evaluated twice: once by Argo CD's ApplicationSet, which substitutes
 it, and then again by Helm, which has no such context. It works in the cluster
 only because Argo CD wins the race, and it makes the chart impossible to render
@@ -105,9 +103,8 @@ and outside the annotations.
 
 ALB path rewriting is awkward, so the workload is expected to know its prefix and
 generate links that include it. Most platform tools support this with one
-setting — Jenkins uses `controller.jenkinsUriPrefix: /jenkins`, which passes
-`--prefix=/jenkins` to the war and also prefixes the chart's own liveness,
-readiness and startup probes.
+setting (a base path or URI prefix), which usually also prefixes the chart's
+own probes.
 
 If an app cannot do this, use the escape hatch: **omit `group.name` and pin a
 different `load-balancer-name`.** That workload gets its own dedicated ALB and
@@ -141,14 +138,11 @@ the two disagreeing Ingresses.
 
 ## Security
 
-The ALB is open to `0.0.0.0/0` over plain HTTP. This is a deliberate choice for a
-sample platform, and it has real consequences:
+The ALB is open to `0.0.0.0/0` over plain HTTP. This is the default for a
+new group, and it has real consequences:
 
 - **Credentials cross the internet in cleartext.** Anything you type into a
   login form on this ALB is readable in transit.
-- **Jenkins executes arbitrary pipeline code.** A publicly reachable Jenkins is a
-  high-value target. Keep the admin password rotated and prefer SSO for anything
-  beyond bootstrap.
 
 To restrict the source range without introducing DNS, add one annotation — it is
 per-Ingress and needs no other change:
@@ -166,17 +160,17 @@ When a workload needs a real name and HTTPS, the missing pieces are a public
 Route 53 hosted zone, an ACM certificate, and something to write the alias
 record. Terraform cannot plan the alias itself, because the ALB hostname is
 assigned by the controller and is unknown until the Ingress has reconciled —
-that ordering problem is what made the previous Jenkins-specific implementation a
-three-phase apply.
+that ordering problem forces a multi-phase apply when Terraform writes the record.
 
 [external-dns](https://github.com/kubernetes-sigs/external-dns) removes the split
 by watching Ingress objects and writing Route 53 records itself, reducing
 exposure to a single annotation:
 
 ```yaml
-external-dns.alpha.kubernetes.io/hostname: jenkins.example.com
+external-dns.alpha.kubernetes.io/hostname: app.example.com
 ```
 
 It needs an IRSA role scoped to `route53:ChangeResourceRecordSets` on the zone,
-and runs in `kube-system`, which already matches a Fargate profile selector — so
-no Fargate change. It is deliberately not installed today.
+and runs on the node like every other controller. It is deliberately not
+installed today; Cashight's API hostname is planned as a Terraform-managed alias
+instead.

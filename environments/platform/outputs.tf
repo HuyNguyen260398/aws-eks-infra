@@ -63,7 +63,27 @@ output "oidc_provider_url" {
   value       = module.platform_cluster.oidc_provider_url
 }
 
-output "fargate_profile_status" {
-  description = "Status of each Amazon EKS Fargate profile."
-  value       = module.platform_cluster.fargate_profile_status
+output "node_group_name" {
+  description = "Name of the general-purpose EKS managed node group."
+  value       = module.platform_cluster.node_group_name
+}
+
+output "node_security_group_id" {
+  description = "Security group attached to general node-group instances and their Pods."
+  value       = module.platform_cluster.node_security_group_id
+}
+
+output "keda_operator_role_arn" {
+  description = "ARN of the IAM role the KEDA operator runs as. Scaler roles trust this ARN."
+  value       = module.platform_cluster.keda_operator_role_arn
+}
+
+output "platform_parameter_prefix" {
+  description = "SSM parameter path under which the platform publishes identifiers for workload repositories."
+  value       = local.platform_parameter_prefix
+}
+
+output "argocd_enabled" {
+  description = "Whether the managed Argo CD capability and GitOps bootstrap are deployed."
+  value       = var.enable_argocd
 }

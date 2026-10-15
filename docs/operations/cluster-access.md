@@ -1,4 +1,4 @@
-# EKS Fargate Cluster Access
+# EKS Cluster Access
 
 The `platform` root creates one Amazon EKS cluster with both private and CIDR-restricted public API access. Use an IAM principal authorized for the AWS account and a source address included in `public_access_cidrs`. The Terraform caller receives cluster administrator permissions through EKS access entries.
 
@@ -20,19 +20,19 @@ aws eks update-kubeconfig \
 
 If the AWS profile is not the default profile, add `--profile <profile-name>` to the command.
 
-## Verify serverless compute
+## Verify capacity
 
 ```bash
-aws eks list-nodegroups \
-  --cluster-name "$(terraform -chdir=environments/platform output -raw cluster_name)"
-aws eks list-fargate-profiles \
-  --cluster-name "$(terraform -chdir=environments/platform output -raw cluster_name)"
-kubectl get nodes -L eks.amazonaws.com/compute-type
+cluster="$(terraform -chdir=environments/platform output -raw cluster_name)"
+aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "${cluster}-general" --query 'nodegroup.status' --output text
+kubectl get nodes -L kubernetes.io/arch,eks.amazonaws.com/capacityType,node.kubernetes.io/instance-type
 kubectl -n kube-system get deployment coredns
 ```
 
-The node group list must be empty. The Fargate profile list must contain the system, platform-addons, and future-workloads profiles. CoreDNS must become available on Fargate. Nodes are created on demand, so `kubectl get nodes` can be empty until matching Pods require capacity; any displayed nodes must be labeled `fargate`.
+The node group must be `ACTIVE` with one `arm64` `SPOT` node (`t4g.medium` by default), and CoreDNS must be available. There are no Fargate profiles.
 
-## Namespace contract
+## Capacity contract
 
-Fargate scheduling is limited to `kube-system`, `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and future `apps-*` namespaces. Workloads outside these selectors do not receive Fargate capacity. Do not create managed node groups or other non-Fargate compute for this platform.
+Everything runs on the one node: the EKS add-ons, the GitOps add-ons (when Argo CD is on) and Cashight. Memory is the limit, not Pod count — prefix delegation and `maxPods: 110` lift the per-node Pod limit. When `kubectl describe pod` shows `Insufficient memory`, raise `node_count` or list larger Graviton types in `node_instance_types`.
+
+A Spot interruption replaces the node; every Pod is down until the new node is `Ready`, typically a few minutes.

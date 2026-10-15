@@ -1,8 +1,8 @@
 # Deploy the platform
 
-Start-from-scratch procedure for the Fargate-only `platform` environment. Follow the stages in order; each stage has a gate that must pass before the next one begins.
+Start-from-scratch procedure for the `platform` environment: one EKS cluster with a single Spot Graviton node, and managed Argo CD when `enable_argocd = true`. Follow the stages in order; each stage has a gate that must pass before the next one begins.
 
-Read [why the apply is staged](#why-the-apply-is-staged) before your first deployment. A single `terraform apply` of `environments/platform` cannot succeed.
+The cluster bills from the moment it exists (about USD 96/month without Argo CD). Stages 1–3 cost almost nothing; create the cluster (Stage 4) only when something is ready to run on it.
 
 ## Conventions
 
@@ -13,16 +13,9 @@ export AWS_PROFILE=default
 export AWS_REGION=ap-southeast-1
 ```
 
+If you sign in with `aws login`, Terraform cannot read that session directly; export it first with `eval "$(aws configure export-credentials --format env)"`.
+
 `terraform.tfvars`, `backend.hcl`, and `tfplan` are ignored by Git and never committed.
-
-## Why the apply is staged
-
-`modules/platform_cluster_bootstrap` writes Argo CD objects with the `kubernetes` provider, whose `host` comes from `module.platform_cluster.cluster_endpoint`. Two things follow:
-
-- Before the cluster exists, the provider has no reachable endpoint, so `kubernetes_manifest.bootstrap` fails at **plan** time with `Failed to construct REST client: no client config`.
-- `kubernetes_manifest` also validates its resource against the live API server during plan, so the Argo CD `ApplicationSet` CRD must already be installed. That CRD arrives with the Argo CD capability, which itself is created by `module.platform_cluster`.
-
-So `module.platform_cluster` must be applied and its Argo CD capability must reach `ACTIVE` before the root can be planned as a whole. Stage 4 uses `-target` for exactly this reason, which is the narrow, Terraform-sanctioned use of targeting. Stage 6 then applies the untargeted root and must report no changes to `module.platform_cluster`.
 
 ## Stage 1 — Prerequisites
 
@@ -42,9 +35,9 @@ aws identitystore list-users \
 
 ## Stage 2 — State foundation
 
-Only for a brand-new account. If `aws s3 ls | grep tfstate` already lists `<prefix>-<account>-<region>-tfstate`, skip to Stage 3.
+Only when the state bucket does not exist. If `aws s3 ls | grep tfstate` already lists `<prefix>-<account>-<region>-tfstate`, skip to Stage 3.
 
-Follow [Terraform state](terraform-state.md): apply `bootstrap/terraform-state` with local state, then re-run `init -migrate-state` against the bucket it just created.
+Follow [Terraform state](terraform-state.md): apply `bootstrap/terraform-state` with local state, then re-run `init -migrate-state` against the bucket it just created. A `backend_override.tf` containing `terraform { backend "local" {} }` (gitignored) lets the first apply run with local state; delete it before migrating.
 
 Gate:
 
@@ -54,24 +47,22 @@ terraform -chdir=bootstrap/terraform-state plan -detailed-exitcode
 
 Exit code `0` means the state foundation is applied and drift-free. The bucket and KMS key carry `prevent_destroy`.
 
-## Stage 3 — Platform root and GitHub authorization
+## Stage 3 — Budget, Identity Center group, GitHub authorization
 
 Create `environments/platform/backend.hcl` and `environments/platform/terraform.tfvars` from their `.example` files. `public_access_cidrs` must be your egress address as a `/32`; `0.0.0.0/0` is rejected by variable validation.
 
 ```bash
 terraform -chdir=environments/platform init -backend-config=backend.hcl
-```
-
-Apply only the Identity Center group and the CodeConnections connection first, because the connection must be authorized by a human in the AWS Console before Argo CD can read the repository:
-
-```bash
 terraform -chdir=environments/platform apply \
+  -target=aws_budgets_budget.account_monthly \
   -target=aws_identitystore_group.argocd_admins \
   -target=aws_identitystore_group_membership.argocd_admins \
   -target=aws_codeconnections_connection.github
 ```
 
-A new connection is created in `PENDING`. Complete the handshake in **AWS Developer Tools → Settings → Connections**, restricting the GitHub App installation to the single GitOps repository. See [GitHub CodeConnections](github-connection.md).
+The budget is account-wide and alerts by email at 50/80/100% of actual and 100% of forecast spend. Applying it first means the alarm exists before the cluster costs anything.
+
+A new connection is created in `PENDING`. Complete the handshake in the console — **CodePipeline → Settings → Connections** (also reachable as Developer Tools → Settings → Connections), Region Singapore — granting the GitHub App installation access to this repository **and** `cashight`. See [GitHub CodeConnections](github-connection.md).
 
 Gate:
 
@@ -81,126 +72,85 @@ aws codeconnections get-connection \
   --query 'Connection.ConnectionStatus' --output text
 ```
 
-Expected: `AVAILABLE`. Do not continue while this reads `PENDING` — the capability will be created with a connection it cannot use.
+Expected: `AVAILABLE`.
 
-## Stage 4 — Cluster, observability, and capabilities
+## Stage 4 — Cluster and node
+
+With `enable_argocd = false` (the default) the root has no Kubernetes resources, so it applies in one step:
+
+```bash
+terraform -chdir=environments/platform plan -out=tfplan
+terraform -chdir=environments/platform apply tfplan
+aws eks update-kubeconfig --name "$(terraform -chdir=environments/platform output -raw cluster_name)" --region "$AWS_REGION"
+```
+
+Review the saved plan before applying. On a first deployment it creates about 70 resources: the VPC (three public and three private subnets, an internet gateway, no NAT gateway), the EKS cluster, one managed node group, the VPC CNI, kube-proxy, Pod Identity Agent and CoreDNS add-ons, the load balancer controller (IRSA) and KEDA (Pod Identity) roles, two KMS keys, the control-plane log group, and four SSM parameters. It must show **no changes** to the Stage 3 resources. Expect 15–20 minutes, most of it the EKS control plane.
+
+Gate:
+
+```bash
+cluster="$(terraform -chdir=environments/platform output -raw cluster_name)"
+aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "${cluster}-general" --query 'nodegroup.status' --output text   # ACTIVE
+kubectl get nodes -L kubernetes.io/arch,eks.amazonaws.com/capacityType,node.kubernetes.io/instance-type                             # 1 arm64 SPOT node
+kubectl get nodes -o jsonpath='{.items[*].status.capacity.pods}'; echo                                                               # 110
+./scripts/verify-platform.sh
+```
+
+`verify-platform.sh` prints `SKIP GitOps and workload checks (enable_argocd = false)` and must otherwise print only `PASS`.
+
+## Stage 5 — Turn on Argo CD (when there is something to deploy)
+
+Managed Argo CD costs about USD 27/month plus about USD 1.32 per Argo CD Application/month, so turn it on when Cashight is ready to deploy.
+
+The apply is staged. `modules/platform_cluster_bootstrap` writes Argo CD objects with the `kubernetes` provider, and `kubernetes_manifest` validates against the live API server during **plan**, so the Argo CD `ApplicationSet` CRD must already exist — and it only arrives with the capability. Create the capability first, then the bootstrap.
+
+Set `enable_argocd = true` in `terraform.tfvars`. Argo CD reads GitHub, not your working tree, so push the GitOps branch first; while it is unmerged, set `gitops_revision` to it.
 
 ```bash
 terraform -chdir=environments/platform plan -target=module.platform_cluster -out=tfplan
 terraform -chdir=environments/platform apply tfplan
 ```
 
-Review the saved plan before applying. On a first deployment it creates roughly 80 resources: one VPC with six subnets across three AZs and one NAT gateway, the EKS cluster, three Fargate profiles, two KMS keys, four CloudWatch log groups, VPC Flow Logs, the CoreDNS add-on, IRSA roles, and the three EKS capabilities. Terraform prints a `Resource targeting is in effect` warning; that is expected here.
-
-Expect 20–30 minutes, most of it the EKS control plane and the capabilities.
-
-### CoreDNS may need one manual restart
-
-**Conditional — check before acting.** This is recovery for one specific stall, not a step every deployment performs. On a clean deployment of this repository the add-on reached `ACTIVE` in 55 seconds with no intervention, because Terraform created it after the Fargate profiles already existed and the Pods scheduled on the first attempt.
-
-The stall happens when the CoreDNS Deployment exists *before* any Fargate profile does. Those first Pods match no profile, so they stay `Pending` forever with **no scheduling events**, and Fargate never re-evaluates an already-pending Pod. The add-on then reports `DEGRADED` and `aws_eks_addon` blocks waiting for `ACTIVE`.
-
-While the apply is still running, check whether you are in that state:
+The targeted plan adds only the Argo CD capability, its IAM role and policy, and its access policy association. Terraform prints a `Resource targeting is in effect` warning; that is expected here. Poll the capability to `ACTIVE` using the loop in [managed EKS capabilities](capabilities.md#verify-readiness); `DEGRADED`, `CREATE_FAILED`, `UPDATE_FAILED` and `DELETING` are terminal. Then:
 
 ```bash
-kubectl -n kube-system get pods -l k8s-app=kube-dns -o wide
-```
-
-- Pods `Running` on `fargate-ip-*` nodes, or no Pods yet — nothing to do; let the apply continue.
-- Pods `Pending` with no events in `kubectl describe` — apply the restart below.
-
-Once the `system` Fargate profile is `ACTIVE`, in a second shell run:
-
-```bash
-aws eks update-kubeconfig --name "$cluster" --region "$AWS_REGION"
-kubectl -n kube-system rollout restart deployment coredns
-kubectl -n kube-system rollout status deployment/coredns --timeout=5m
-```
-
-Expected: two new Pods `1/1 Running` on `fargate-ip-*` nodes, and the add-on reaching `ACTIVE` within a couple of minutes — add-on health lags the Pods, so `DEGRADED` immediately after a successful rollout is normal.
-
-The add-on's create timeout is set to 40m in `modules/platform_cluster/eks.tf` to leave room for this. If the apply still times out, the add-on usually goes `ACTIVE` shortly after; verify with `aws eks describe-addon`, clear the failed-create marker, and re-plan to confirm convergence rather than replacing healthy DNS:
-
-```bash
-terraform -chdir=environments/platform untaint 'module.platform_cluster.module.eks.aws_eks_addon.this["coredns"]'
-terraform -chdir=environments/platform plan -target=module.platform_cluster -detailed-exitcode   # expect 0
-```
-
-Gate — no EC2 compute anywhere:
-
-```bash
-cluster="$(terraform -chdir=environments/platform output -raw cluster_name)"
-aws eks list-nodegroups --cluster-name "$cluster" --query 'length(nodegroups)' --output text   # expect 0
-aws eks list-fargate-profiles --cluster-name "$cluster" --output text                          # expect 3
-```
-
-## Stage 5 — Capability readiness
-
-Poll all three capabilities to `ACTIVE` using the loop in [managed EKS capabilities](capabilities.md#verify-readiness). `DEGRADED`, `CREATE_FAILED`, `UPDATE_FAILED`, and `DELETING` are terminal.
-
-Configure `kubectl` (see [cluster access](cluster-access.md)):
-
-```bash
-aws eks update-kubeconfig --name "$cluster" --region "$AWS_REGION"
-```
-
-Gate — the CRDs that Stage 6 plans against must exist:
-
-```bash
-kubectl api-resources | grep -E 'applications|applicationsets|resourcegraphdefinitions|iamroleselectors'
-```
-
-Expected: `applications` and `applicationsets` (`argoproj.io`), `resourcegraphdefinitions` (`kro.run`), `iamroleselectors` (`services.k8s.aws`). If `applicationsets` is missing, Stage 6 will fail at plan time.
-
-## Stage 6 — GitOps bootstrap
-
-The GitOps branch must be pushed to GitHub first — Argo CD reads `main` from the repository, not your working tree.
-
-Now plan the **untargeted** root:
-
-```bash
+kubectl api-resources | grep -E 'applications|applicationsets'   # both present
 terraform -chdir=environments/platform plan -out=tfplan
 terraform -chdir=environments/platform apply tfplan
 ```
 
-Gate: the plan adds only `module.platform_cluster_bootstrap` resources (the Argo CD cluster `Secret` and the `platform-bootstrap` ApplicationSet) and shows **no changes** to `module.platform_cluster`. Changes to already-applied cluster resources here mean Stage 4 was applied from different inputs; stop and reconcile before applying.
+Gate: the second plan adds only `module.platform_cluster_bootstrap` resources (the Argo CD cluster `Secret` and the `platform-bootstrap` ApplicationSet) and shows no changes to `module.platform_cluster`.
 
-## Stage 7 — GitOps sync
-
-The root ApplicationSet discovers `gitops/platform/bootstrap/`, which fans out to the `config-addons`, `config-observability`, `config-kro-definitions`, and `config-workloads` children.
+## Stage 6 — GitOps sync and acceptance
 
 ```bash
 kubectl -n argocd get applicationsets
 kubectl -n argocd get applications -o wide
-```
-
-Expected: the root plus four child ApplicationSets, and every Application eventually `Synced` / `Healthy`. `config-workloads` targets an intentionally empty directory and stays healthy through `allowEmpty`.
-
-Controllers land on Fargate only when their namespace matches a profile selector:
-
-```bash
-kubectl get nodes -L eks.amazonaws.com/compute-type
-kubectl get pods -A -o wide
-```
-
-Expected: every node reports `fargate`, and Pods run in `kube-system`, `argo-rollouts`, `opentelemetry-operator-system`, and `amazon-cloudwatch`.
-
-## Stage 8 — Acceptance
-
-```bash
 ./scripts/verify-platform.sh
+./scripts/check-repo-access.sh <owner> cashight <revision> docs
 ./scripts/check-drift.sh
 ```
 
-Gate: `verify-platform.sh` prints `PASS` on every assertion and exits `0`; `check-drift.sh` reports detailed exit code `0` for both stateful roots. See [validate the platform](validate-platform.md).
-
-Confirm the plan's non-goals still hold: no Ingress, no LoadBalancer Service, no `apps-*` workload, and no EC2 node group.
+Expected: the root plus three child ApplicationSets (`platform-addons`, `platform-namespaces`, `platform-workloads`), every Application `Synced` / `Healthy`, `verify-platform.sh` printing `PASS` on every assertion, the repository probe printing `PASS`, and drift exit code `0` for both stateful roots. Once Cashight is deployed, run `EXPECT_WORKLOADS=true ./scripts/verify-platform.sh`.
 
 ## Recovery
 
 ### Connection stuck in `PENDING`
 
 Authorization is a human step and cannot be automated. Re-open the connection in the console and complete the GitHub App install. If the app was installed against the wrong account, delete the connection in the console and re-apply the `aws_codeconnections_connection.github` target.
+
+### Node never becomes Ready
+
+```bash
+aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "${cluster}-general" --query 'nodegroup.health'
+aws eks describe-addon --cluster-name "$cluster" --addon-name vpc-cni --query 'addon.[status,health]'
+```
+
+The VPC CNI, kube-proxy and Pod Identity Agent are created before the node group (`before_compute`); a node without a working VPC CNI stays `NotReady`. A Spot capacity shortage shows as `nodegroup.health.issues` — add same-size Graviton types (`c6g.large`, `c7g.large`) to `node_instance_types`, or set `node_capacity_type = "ON_DEMAND"`.
+
+### Webhook calls time out
+
+The node security group admits the control plane only on 10250, 4443, 6443, 8443 and 9443. An admission webhook or aggregated APIService served on any other port fails with `context deadline exceeded`. Keep the chart's default port, or move it to one of those.
 
 ### Capability `CREATE_FAILED` or `DEGRADED`
 
@@ -209,24 +159,15 @@ aws eks describe-capability --cluster-name "$cluster" --capability-name "${clust
 aws iam get-role --role-name "${cluster}-argocd-capability"
 ```
 
-Most failures are IAM propagation or trust policy. Confirm the role trusts only `capabilities.eks.amazonaws.com` for `sts:AssumeRole` and `sts:TagSession`, and that the Argo CD role's inline policy scopes `codeconnections:UseConnection` to the Terraform-managed connection ARN. Capabilities use `delete_propagation_policy = "RETAIN"`, so removing one from configuration leaves it running in AWS — delete it deliberately in the console, never by dropping the resource block.
+Most failures are IAM propagation or trust policy. Confirm the role trusts only `capabilities.eks.amazonaws.com` for `sts:AssumeRole` and `sts:TagSession`, and that its inline policy scopes `codeconnections:UseConnection` to the Terraform-managed connection ARN. The capability uses `delete_propagation_policy = "RETAIN"`, so setting `enable_argocd = false` leaves it running in AWS — delete it deliberately in the console.
 
 ### `Failed to construct REST client` during plan
 
-The cluster is unreachable or absent. You are running Stage 6 before Stage 4 completed, or your kubeconfig/credentials expired. Re-run the Stage 5 gate, then retry.
+The cluster is unreachable or absent, or the Argo CD CRDs are not installed yet. You are planning the bootstrap before Stage 5's targeted apply completed, or your kubeconfig/credentials expired.
 
 ### `Invalid count argument` during plan
 
 A data source inside a child module resolved to unknown. This is what a module-level `depends_on` causes: it defers every data source in that module to apply time. Do not add `depends_on` to `module.eks`; express ordering through real value references instead.
-
-### Fargate Pod stuck `Pending`
-
-```bash
-kubectl -n <namespace> describe pod <pod>
-aws eks describe-fargate-profile --cluster-name "$cluster" --fargate-profile-name "${cluster}-platform-addons"
-```
-
-A Pod in a namespace that no Fargate profile selects gets no capacity and stays `Pending` forever with no scheduling event. Adding a platform component means adding its namespace to a profile selector in `modules/platform_cluster/eks.tf` **and** to the GitOps config in the same change. Changing selectors replaces the Fargate profile, which is a slow operation.
 
 ### Application not `Synced` / `Healthy`
 
@@ -235,7 +176,7 @@ kubectl -n argocd get application <name> -o jsonpath='{.status.conditions}'
 kubectl -n argocd describe applicationset platform-bootstrap
 ```
 
-Check in order: the Git revision and path resolve in the repository; the change is pushed to `main`; the Argo CD capability role can still reach the connection; and the target namespace matches a Fargate selector. Values interpolated from `{{ .metadata.annotations.* }}` come from the cluster `Secret` written by Terraform — if one is empty, add it to `modules/platform_cluster_bootstrap` rather than hardcoding it in YAML.
+Check in order: the Git revision and path resolve in the repository; the change is pushed; the GitHub App installation includes the repository; and the Pods fit on the node (`kubectl describe pod` shows `Insufficient memory`). Values interpolated from `{{ .metadata.annotations.* }}` come from the cluster `Secret` written by Terraform — if one is empty, add it to `modules/platform_cluster_bootstrap` rather than hardcoding it in YAML.
 
 ### Rolling back
 

@@ -81,7 +81,7 @@ ingress_json="$(kubectl get ingress -A -o json 2>/dev/null)"
 if [ -n "$ingress_json" ]; then
   rows="$(printf '%s' "$ingress_json" | jq -r '
     .items[]
-    | select(.metadata.namespace | startswith("apps-"))
+    | select(.metadata.namespace | test("^(kube-system|argocd|keda|cert-manager|argo-rollouts)$") | not)
     | . as $i
     | ((($i.status.loadBalancer.ingress // []) | map(.hostname // .ip))[0]) as $addr
     | $i.spec.rules[]?.http.paths[]?
@@ -90,22 +90,11 @@ if [ -n "$ingress_json" ]; then
 fi
 
 if [ -z "$rows" ]; then
-  echo "  no workload Ingress in an apps-* namespace"
+  echo "  no workload Ingress yet"
 else
   printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r ns url; do
     field "$ns" "$url"
   done
-fi
-
-# The password is printed as the command that retrieves it, never as the value.
-# A script that prints credentials by default puts them into scrollback,
-# screenshots and shared terminal recordings.
-if kubectl -n apps-jenkins get secret jenkins >/dev/null 2>&1; then
-  echo
-  echo "Jenkins sign-in"
-  field User "admin"
-  field Password "kubectl -n apps-jenkins get secret jenkins \\"
-  echo "                   -o jsonpath='{.data.jenkins-admin-password}' | base64 -d"
 fi
 
 echo
