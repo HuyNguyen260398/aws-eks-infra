@@ -121,14 +121,20 @@ variable "budget_notification_emails" {
   }
 }
 
-variable "node_instance_type" {
-  description = "Graviton (arm64) EC2 instance type for the general-purpose managed node group."
+variable "node_instance_types" {
+  description = "Graviton (arm64) EC2 instance types for the node group. 4 GiB types by default; Spot picks whichever pool has capacity."
+  type        = list(string)
+  default     = ["t4g.medium", "m7g.medium", "m6g.medium"]
+}
+
+variable "node_capacity_type" {
+  description = "Capacity type of the node group: SPOT (cheapest; an interruption replaces the node) or ON_DEMAND."
   type        = string
-  default     = "t4g.large"
+  default     = "SPOT"
 }
 
 variable "node_count" {
-  description = "Fixed size of the general-purpose managed node group, one node per Availability Zone at the default of 3."
+  description = "Fixed size of the node group. One node runs the whole platform; raise it when Pods stop fitting."
   type        = number
-  default     = 3
+  default     = 1
 }

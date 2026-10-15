@@ -69,7 +69,8 @@ module "platform_cluster" {
   environment                  = "platform"
   vpc_cidr                     = var.vpc_cidr
   kubernetes_version           = var.kubernetes_version
-  node_instance_type           = var.node_instance_type
+  node_instance_types          = var.node_instance_types
+  node_capacity_type           = var.node_capacity_type
   node_count                   = var.node_count
   public_access_cidrs          = var.public_access_cidrs
   identity_store_id            = local.identity_store_id

@@ -1,6 +1,4 @@
-# EKS Pod Identity roles. Pod Identity works only on EC2 nodes, never on
-# Fargate, so every Pod using these roles must be scheduled on the general
-# node group (see the system Fargate profile's label selectors in eks.tf).
+# EKS Pod Identity roles, served by the Pod Identity Agent on the node.
 # The source conditions stop another account's or cluster's Pod Identity
 # agent from assuming these roles (confused deputy).
 
@@ -26,18 +24,6 @@ data "aws_iam_policy_document" "pod_identity_assume_role" {
       values   = [module.eks.cluster_arn]
     }
   }
-}
-
-resource "aws_iam_role" "ebs_csi_driver" {
-  name               = "${local.cluster_name}-ebs-csi-driver"
-  assume_role_policy = data.aws_iam_policy_document.pod_identity_assume_role.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
-  role       = aws_iam_role.ebs_csi_driver.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
 # KEDA reads queue depth on behalf of each ScaledObject by assuming the role

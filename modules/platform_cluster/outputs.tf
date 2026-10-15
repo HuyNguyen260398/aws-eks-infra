@@ -48,13 +48,6 @@ output "oidc_provider_url" {
   value       = module.eks.oidc_provider
 }
 
-output "fargate_profile_status" {
-  description = "Status of each Amazon EKS Fargate profile."
-  value = {
-    for name, profile in module.eks.fargate_profiles : name => profile.fargate_profile_status
-  }
-}
-
 output "aws_load_balancer_controller_role_arn" {
   description = "ARN of the IAM role used by the AWS Load Balancer Controller service account."
   value       = aws_iam_role.load_balancer_controller.arn
@@ -79,11 +72,6 @@ output "node_group_name" {
 output "node_security_group_id" {
   description = "Security group attached to general node-group instances and their Pods. The AWS Load Balancer Controller adds ALB ingress rules to it."
   value       = module.eks.node_security_group_id
-}
-
-output "ebs_csi_driver_role_arn" {
-  description = "ARN of the IAM role the EBS CSI controller assumes through EKS Pod Identity."
-  value       = aws_iam_role.ebs_csi_driver.arn
 }
 
 output "keda_operator_role_arn" {

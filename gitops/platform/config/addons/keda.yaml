@@ -28,12 +28,10 @@ spec:
         helm:
           releaseName: keda
           values: |
-            # The keda namespace matches no Fargate profile, so KEDA runs on
-            # the general node group - required, because its AWS credentials
-            # come from EKS Pod Identity (association in Terraform:
-            # modules/platform_cluster/iam_pod_identity.tf), which Fargate
-            # does not support. IRSA stays off. ScaledObjects name the role to
-            # assume in a TriggerAuthentication (podIdentity.provider: aws).
+            # KEDA's AWS credentials come from EKS Pod Identity (association
+            # in Terraform: modules/platform_cluster/iam_pod_identity.tf), so
+            # IRSA stays off. ScaledObjects name the role to assume in a
+            # TriggerAuthentication (podIdentity.provider: aws).
             podIdentity:
               aws:
                 irsa:

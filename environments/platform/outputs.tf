@@ -63,11 +63,6 @@ output "oidc_provider_url" {
   value       = module.platform_cluster.oidc_provider_url
 }
 
-output "fargate_profile_status" {
-  description = "Status of each Amazon EKS Fargate profile."
-  value       = module.platform_cluster.fargate_profile_status
-}
-
 output "node_group_name" {
   description = "Name of the general-purpose EKS managed node group."
   value       = module.platform_cluster.node_group_name

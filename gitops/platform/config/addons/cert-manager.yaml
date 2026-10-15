@@ -38,14 +38,11 @@ spec:
             # serves the load balancer controller's webhook certificate.
             replicaCount: 1
             webhook:
+              # Keep the chart's default securePort (10250). Pods have their
+              # own VPC IPs, and the node security group admits the control
+              # plane on 10250, 4443, 6443, 8443 and 9443 only, so any other
+              # port would make the API server's webhook calls time out.
               replicaCount: 1
-              # Fargate gives every Pod the node's own IP and runs the kubelet
-              # on 10250, so the API server's webhook call to <podIP>:10250
-              # reaches the kubelet instead of cert-manager and is rejected:
-              #   x509: certificate is valid for fargate-ip-10-0-4-117...,
-              #   not cert-manager-webhook.cert-manager.svc
-              # Move the webhook off the kubelet's port.
-              securePort: 10260
             cainjector:
               replicaCount: 1
       destination:

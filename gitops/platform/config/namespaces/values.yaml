@@ -1,9 +1,5 @@
-# Tenant namespaces on the general node group. Rendered by
-# gitops/platform/charts/namespace-config through
-# gitops/platform/bootstrap/config-namespaces.yaml.
-#
-# Names must not match apps-*: that pattern is selected by a Fargate profile,
-# and these tenants need EC2 for EKS Pod Identity, EBS and NetworkPolicy.
+# Tenant namespaces. Rendered by gitops/platform/charts/namespace-config
+# through gitops/platform/bootstrap/config-namespaces.yaml.
 
 # Prefix for the shared NetworkPolicy names (tenant-ingress-deny-all, ...).
 name: tenant
