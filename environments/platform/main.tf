@@ -72,6 +72,7 @@ module "platform_cluster" {
   node_instance_types          = var.node_instance_types
   node_capacity_type           = var.node_capacity_type
   node_count                   = var.node_count
+  enable_argocd                = var.enable_argocd
   public_access_cidrs          = var.public_access_cidrs
   identity_store_id            = local.identity_store_id
   identity_center_instance_arn = local.identity_center_instance_arn
@@ -81,8 +82,11 @@ module "platform_cluster" {
   tags                         = local.tags
 }
 
+# The Terraform -> Argo CD handoff. Only meaningful once the managed Argo CD
+# capability exists; see docs/operations/deploy-platform.md.
 module "platform_cluster_bootstrap" {
   source = "../../modules/platform_cluster_bootstrap"
+  count  = var.enable_argocd ? 1 : 0
 
   cluster_name                          = module.platform_cluster.cluster_name
   cluster_arn                           = module.platform_cluster.cluster_arn

@@ -55,12 +55,12 @@ output "aws_load_balancer_controller_role_arn" {
 
 output "argocd_capability_arn" {
   description = "ARN of the managed Argo CD EKS capability."
-  value       = aws_eks_capability.argocd.arn
+  value       = try(aws_eks_capability.argocd[0].arn, null)
 }
 
 output "argocd_capability_role_name" {
   description = "Name of the IAM role assumed by the managed Argo CD capability."
-  value       = aws_iam_role.argocd_capability.name
+  value       = try(aws_iam_role.argocd_capability[0].name, null)
 }
 
 output "node_group_name" {

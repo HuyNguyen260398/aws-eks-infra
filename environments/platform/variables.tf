@@ -138,3 +138,9 @@ variable "node_count" {
   type        = number
   default     = 1
 }
+
+variable "enable_argocd" {
+  description = "Create the managed Argo CD capability and the GitOps bootstrap. Off by default: the capability costs about USD 27/month plus about USD 1.32 per Argo CD Application/month, so turn it on when there is something to deploy."
+  type        = bool
+  default     = false
+}

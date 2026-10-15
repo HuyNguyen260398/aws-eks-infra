@@ -48,6 +48,11 @@ variable "argocd_admin_group_id" {
   type        = string
 }
 
+variable "enable_argocd" {
+  description = "Create the managed Argo CD capability, its IAM role and its cluster-admin access entry."
+  type        = bool
+}
+
 variable "github_connection_arn" {
   description = "ARN of the AWS CodeConnections GitHub connection used by managed Argo CD."
   type        = string

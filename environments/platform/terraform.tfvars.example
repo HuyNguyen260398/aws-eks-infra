@@ -25,3 +25,6 @@ budget_notification_emails = ["you@example.com"]
 # node_instance_types = ["t4g.medium", "m7g.medium", "m6g.medium"]
 # node_capacity_type  = "SPOT"
 # node_count          = 1
+
+# Optional. Managed Argo CD and the GitOps bootstrap (gitops/). Off by default.
+# enable_argocd = true
