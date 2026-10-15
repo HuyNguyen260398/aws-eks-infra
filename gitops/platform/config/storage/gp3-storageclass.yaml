@@ -1,0 +1,16 @@
+# Default StorageClass for EBS-backed volumes on the general node group.
+# WaitForFirstConsumer creates each volume in the AZ its Pod was scheduled to;
+# Immediate would pick an AZ first and could strand the Pod.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: gp3
+  encrypted: "true"

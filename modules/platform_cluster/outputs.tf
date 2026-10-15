@@ -110,3 +110,8 @@ output "node_security_group_id" {
   description = "Security group attached to general node-group instances and their Pods. The AWS Load Balancer Controller adds ALB ingress rules to it."
   value       = module.eks.node_security_group_id
 }
+
+output "ebs_csi_driver_role_arn" {
+  description = "ARN of the IAM role the EBS CSI controller assumes through EKS Pod Identity."
+  value       = aws_iam_role.ebs_csi_driver.arn
+}

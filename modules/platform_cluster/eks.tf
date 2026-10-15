@@ -61,6 +61,14 @@ module "eks" {
         create = "40m"
       }
     }
+    # Created after the node group: its controller Deployment needs EC2
+    # capacity for Pod Identity, and its node DaemonSet only runs on EC2.
+    aws-ebs-csi-driver = {
+      pod_identity_association = [{
+        role_arn        = aws_iam_role.ebs_csi_driver.arn
+        service_account = "ebs-csi-controller-sa"
+      }]
+    }
   }
 
   fargate_profiles = {
