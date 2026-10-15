@@ -20,3 +20,7 @@ argocd_admin_user_ids = [
 # roughly USD 345/month (control plane, three t4g.large nodes, NAT, ALB).
 budget_notification_emails = ["you@example.com"]
 # monthly_budget_usd       = 400
+
+# Optional. General-purpose Graviton node group; one node per AZ at 3.
+# node_instance_type = "t4g.large"
+# node_count         = 3

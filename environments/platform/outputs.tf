@@ -67,3 +67,13 @@ output "fargate_profile_status" {
   description = "Status of each Amazon EKS Fargate profile."
   value       = module.platform_cluster.fargate_profile_status
 }
+
+output "node_group_name" {
+  description = "Name of the general-purpose EKS managed node group."
+  value       = module.platform_cluster.node_group_name
+}
+
+output "node_security_group_id" {
+  description = "Security group attached to general node-group instances and their Pods."
+  value       = module.platform_cluster.node_security_group_id
+}

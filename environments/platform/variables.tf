@@ -120,3 +120,15 @@ variable "budget_notification_emails" {
     error_message = "budget_notification_emails must contain at least one valid email address."
   }
 }
+
+variable "node_instance_type" {
+  description = "Graviton (arm64) EC2 instance type for the general-purpose managed node group."
+  type        = string
+  default     = "t4g.large"
+}
+
+variable "node_count" {
+  description = "Fixed size of the general-purpose managed node group, one node per Availability Zone at the default of 3."
+  type        = number
+  default     = 3
+}

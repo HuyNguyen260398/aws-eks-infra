@@ -99,3 +99,14 @@ output "jenkins_efs_access_point_id" {
   description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
   value       = aws_efs_access_point.jenkins.id
 }
+
+output "node_group_name" {
+  description = "Name of the general-purpose EKS managed node group."
+  # node_group_id is "<cluster>:<node group>".
+  value = element(split(":", module.eks.eks_managed_node_groups["general"].node_group_id), 1)
+}
+
+output "node_security_group_id" {
+  description = "Security group attached to general node-group instances and their Pods. The AWS Load Balancer Controller adds ALB ingress rules to it."
+  value       = module.eks.node_security_group_id
+}

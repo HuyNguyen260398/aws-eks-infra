@@ -62,3 +62,25 @@ variable "tags" {
   description = "Tags applied to platform cluster resources."
   type        = map(string)
 }
+
+variable "node_instance_type" {
+  description = "Graviton (arm64) EC2 instance type for the general-purpose managed node group."
+  type        = string
+
+  validation {
+    # Graviton families carry a "g" right after the generation number:
+    # t4g, m7g, c7gn, r8gd. x86 types such as m5 or g5 do not match.
+    condition     = can(regex("^[a-z]+[0-9]+g[a-z]*\\.[a-z0-9]+$", var.node_instance_type))
+    error_message = "node_instance_type must be a Graviton (arm64) type such as t4g.large; the node group uses an arm64 AMI."
+  }
+}
+
+variable "node_count" {
+  description = "Fixed size of the general-purpose managed node group. Nodes spread across the three private subnets."
+  type        = number
+
+  validation {
+    condition     = var.node_count >= 1 && var.node_count <= 10 && floor(var.node_count) == var.node_count
+    error_message = "node_count must be a whole number from 1 to 10."
+  }
+}
