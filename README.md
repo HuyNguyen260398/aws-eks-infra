@@ -23,8 +23,7 @@ that still runs it.
 - A three-AZ VPC. The node runs in a **public subnet** with its own public IPv4
   address, so there is **no NAT gateway**; private subnets hold only the EKS
   control-plane ENIs.
-- Amazon EKS 1.35 with **one Spot Graviton node** (`t4g.medium`, `m7g.medium` or
-  `m6g.medium`, 4 GiB). VPC CNI with NetworkPolicy enforcement and prefix
+- Amazon EKS 1.35 with **one Spot Graviton node** (`t4g.medium`, 2 vCPU / 4 GiB). VPC CNI with NetworkPolicy enforcement and prefix
   delegation, kube-proxy, CoreDNS, EKS Pod Identity Agent.
 - **Managed Argo CD, opt-in** (`enable_argocd`, default `false`) through AWS
   CodeConnections. When on, it installs from `gitops/`: AWS Load Balancer
@@ -45,7 +44,7 @@ Singapore list prices, 730 hours a month. Verify before relying on them.
 | Item | USD / month |
 | --- | ---: |
 | EKS control plane | 73 |
-| 1 × Spot 4 GiB Graviton node (on-demand `t4g.medium` ≈ 31) | ≈ 14 |
+| 1 × Spot `t4g.medium` (on-demand ≈ 31) | ≈ 14 |
 | 20 GB gp3 root volume, node public IPv4 | ≈ 6 |
 | Control-plane logs (audit + authenticator), KMS keys | ≈ 3 |
 | **Platform without Argo CD** | **≈ 96** |

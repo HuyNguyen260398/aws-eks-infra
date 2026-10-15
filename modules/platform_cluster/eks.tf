@@ -53,8 +53,8 @@ module "eks" {
   }
 
   # One small Spot node runs everything: the platform controllers and
-  # Cashight. Graviton 4 GiB types are listed together so Spot can draw from
-  # whichever pool has capacity. No cluster autoscaler: KEDA scales Pods, not
+  # Cashight. Any extra instance types must be the same size (a check in
+  # locals.tf warns otherwise). No cluster autoscaler: KEDA scales Pods, not
   # nodes; raise node_count or pick larger types when Pods stop fitting.
   #
   # The node sits in a public subnet with a public IPv4 address, so it reaches

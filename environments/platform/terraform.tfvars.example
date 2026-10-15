@@ -11,18 +11,20 @@ github_repository = "aws-eks-infra"
 # Required. Your egress address as a /32. 0.0.0.0/0 is rejected by validation.
 public_access_cidrs = ["203.0.113.10/32"]
 
-# Required. Run the aws identitystore list-users command from README.md step 2.
+# Required. Run the aws identitystore list-users command from
+# docs/operations/deploy-platform.md, Stage 1.
 argocd_admin_user_ids = [
   "IDENTITY_STORE_USER_ID",
 ]
 
-# Required. Account-wide monthly cost budget alerts. The platform alone costs
-# roughly USD 345/month (control plane, three t4g.large nodes, NAT, ALB).
+# Required. Account-wide monthly cost budget alerts. The platform costs roughly
+# USD 96/month without Argo CD (control plane, one Spot t4g.medium node).
 budget_notification_emails = ["you@example.com"]
 # monthly_budget_usd       = 400
 
-# Optional. One Spot Graviton node with 4 GiB runs the whole platform.
-# node_instance_types = ["t4g.medium", "m7g.medium", "m6g.medium"]
+# Optional. One Spot Graviton node with 2 vCPU / 4 GiB runs the whole platform.
+# All listed types must be the same size.
+# node_instance_types = ["t4g.medium", "c6g.large", "c7g.large"]
 # node_capacity_type  = "SPOT"
 # node_count          = 1
 

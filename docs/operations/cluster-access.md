@@ -29,7 +29,7 @@ kubectl get nodes -L kubernetes.io/arch,eks.amazonaws.com/capacityType,node.kube
 kubectl -n kube-system get deployment coredns
 ```
 
-The node group must be `ACTIVE` with one `arm64` `SPOT` node (one of `node_instance_types`), and CoreDNS must be available. There are no Fargate profiles.
+The node group must be `ACTIVE` with one `arm64` `SPOT` node (`t4g.medium` by default), and CoreDNS must be available. There are no Fargate profiles.
 
 ## Capacity contract
 

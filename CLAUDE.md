@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Terraform + GitOps for the single Amazon EKS cluster that hosts **Cashight** (`environments/platform`). It started as a general-purpose reference platform and has been cut down to what Cashight needs, at the lowest cost that still runs it:
 
-- **One Spot Graviton node** (`<cluster>-general`; `t4g.medium`, `m7g.medium` or `m6g.medium`, 4 GiB) in a **public subnet**, so there is no NAT gateway. No Fargate, no Auto Mode, no Karpenter.
+- **One Spot Graviton node** (`<cluster>-general`; `t4g.medium`, 2 vCPU / 4 GiB) in a **public subnet**, so there is no NAT gateway. No Fargate, no Auto Mode, no Karpenter.
 - EKS add-ons: VPC CNI (NetworkPolicy enforcement and prefix delegation on), kube-proxy, CoreDNS, EKS Pod Identity Agent.
 - **Managed Argo CD is opt-in** (`enable_argocd`, default `false`). It bills per capability-hour and per Application-hour, so it stays off until there is something to deploy. Everything under `gitops/` only takes effect once it is on.
 - GitOps add-ons (installed by Argo CD): AWS Load Balancer Controller, cert-manager (issues that controller's webhook certificate), Argo Rollouts, KEDA, and the guarded `cashight` namespace.
@@ -70,9 +70,9 @@ State bootstrap is chicken-and-egg: `bootstrap/terraform-state` is first applied
 
 ### Capacity
 
-One managed node group, fixed size (`node_count`, default 1), Spot by default (`node_capacity_type`). `node_instance_types` lists several Graviton types of the same size so Spot can draw from more pools; a variable validation rejects x86 types because the AMI is arm64. A Spot interruption replaces the node and briefly takes everything down — acceptable for a single-user app. Raise `node_count` or pick larger types when Pods stop fitting.
+One managed node group, fixed size (`node_count`, default 1), Spot by default (`node_capacity_type`). `node_instance_types` defaults to `t4g.medium`, the cheapest Spot pool; add same-size types (`c6g.large`, `c7g.large`, about twice the Spot price) if Spot capacity runs short. A variable validation rejects x86 types because the AMI is arm64, and a `check` block warns when listed types differ in vCPU or memory. A Spot interruption replaces the node and briefly takes everything down — acceptable for a single-user app. Raise `node_count` or pick larger types when Pods stop fitting.
 
-The node sits in a public subnet with a public IPv4 address and reaches AWS APIs and the internet directly. Private subnets remain only for the EKS control-plane ENIs. The node security group admits the control plane on 10250 (kubelet) and the webhook ports 4443, 6443, 8443, 9443 — **an admission webhook or APIService on any other port times out**. Keep chart defaults that use those ports.
+The node sits in a public subnet with a public IPv4 address and reaches AWS APIs and the internet directly. Private subnets remain only for the EKS control-plane ENIs. The node security group admits the control plane on 10250 (kubelet), 10251 and the webhook ports 4443, 6443, 8443, 9443 — **an admission webhook or APIService on any other port times out**. Keep chart defaults that use those ports.
 
 Prefix delegation plus `maxPods: 110` (node group `cloudinit_pre_nodeadm`) lifts the 17-Pod limit of a 4 GiB instance; memory is the real limit.
 

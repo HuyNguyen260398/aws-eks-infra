@@ -146,7 +146,7 @@ aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "${cluster
 aws eks describe-addon --cluster-name "$cluster" --addon-name vpc-cni --query 'addon.[status,health]'
 ```
 
-The VPC CNI, kube-proxy and Pod Identity Agent are created before the node group (`before_compute`); a node without a working VPC CNI stays `NotReady`. A Spot capacity shortage shows as `nodegroup.health.issues` — add another Graviton type of the same size to `node_instance_types`, or set `node_capacity_type = "ON_DEMAND"`.
+The VPC CNI, kube-proxy and Pod Identity Agent are created before the node group (`before_compute`); a node without a working VPC CNI stays `NotReady`. A Spot capacity shortage shows as `nodegroup.health.issues` — add same-size Graviton types (`c6g.large`, `c7g.large`) to `node_instance_types`, or set `node_capacity_type = "ON_DEMAND"`.
 
 ### Webhook calls time out
 

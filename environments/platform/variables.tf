@@ -122,9 +122,9 @@ variable "budget_notification_emails" {
 }
 
 variable "node_instance_types" {
-  description = "Graviton (arm64) EC2 instance types for the node group. 4 GiB types by default; Spot picks whichever pool has capacity."
+  description = "Graviton (arm64) EC2 instance types for the node group, all the same size. t4g.medium (2 vCPU, 4 GiB) is the cheapest Spot pool; add c6g.large and c7g.large (same size, about twice the Spot price) if Spot capacity runs short."
   type        = list(string)
-  default     = ["t4g.medium", "m7g.medium", "m6g.medium"]
+  default     = ["t4g.medium"]
 }
 
 variable "node_capacity_type" {
