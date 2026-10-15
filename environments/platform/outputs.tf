@@ -82,3 +82,8 @@ output "keda_operator_role_arn" {
   description = "ARN of the IAM role the KEDA operator runs as. Scaler roles trust this ARN."
   value       = module.platform_cluster.keda_operator_role_arn
 }
+
+output "platform_parameter_prefix" {
+  description = "SSM parameter path under which the platform publishes identifiers for workload repositories."
+  value       = local.platform_parameter_prefix
+}

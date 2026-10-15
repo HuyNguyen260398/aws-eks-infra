@@ -6,15 +6,16 @@ locals {
   identity_store_id            = one(data.aws_ssoadmin_instances.current.identity_store_ids)
   identity_center_instance_arn = one(data.aws_ssoadmin_instances.current.arns)
   connection_id                = element(reverse(split("/", aws_codeconnections_connection.github.arn)), 0)
-  gitops_repo_url = format(
-    "https://codeconnections.%s.amazonaws.com/git-http/%s/%s/%s/%s/%s.git",
+  # Base Git-HTTP endpoint of the CodeConnections connection. Any repository
+  # the connection's GitHub App installation can see is <base>/<owner>/<repo>.git.
+  codeconnections_git_http_base = format(
+    "https://codeconnections.%s.amazonaws.com/git-http/%s/%s/%s",
     var.aws_region,
     data.aws_caller_identity.current.account_id,
     var.aws_region,
     local.connection_id,
-    var.github_owner,
-    var.github_repository,
   )
+  gitops_repo_url = "${local.codeconnections_git_http_base}/${var.github_owner}/${var.github_repository}.git"
   tags = {
     Environment = "platform"
     ManagedBy   = "Terraform"
