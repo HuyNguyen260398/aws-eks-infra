@@ -13,6 +13,8 @@ Example and tenant workloads reconciled by Argo CD.
 
 ## Contract
 
-Workloads must use `apps-*` namespaces (Fargate capacity), Fargate-compatible
-security contexts, and ALB IP targets. Jenkins (`apps-jenkins`) is the first
-example — see `docs/operations/deploy-jenkins.md`.
+Workloads either use `apps-*` namespaces (Fargate capacity, Fargate-compatible
+security contexts, ALB IP targets — Jenkins in `apps-jenkins` is the example,
+see `docs/operations/deploy-jenkins.md`), or a tenant namespace declared in
+`gitops/platform/config/namespaces/values.yaml` (EC2 capacity, Pod Security
+`restricted`, default-deny NetworkPolicies the workload must open itself).

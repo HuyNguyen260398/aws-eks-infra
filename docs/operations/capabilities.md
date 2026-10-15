@@ -1,6 +1,6 @@
 # Managed EKS capabilities
 
-The platform Terraform root creates AWS-managed Argo CD, ACK, and kro capabilities. They run outside the Fargate-only cluster; Terraform does not install capability controllers or duplicate their access policies in Kubernetes.
+The platform Terraform root creates AWS-managed Argo CD, ACK, and kro capabilities. They run outside the cluster; Terraform does not install capability controllers or duplicate their access policies in Kubernetes.
 
 ## Apply
 

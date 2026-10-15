@@ -31,8 +31,8 @@ kubectl get nodes -L eks.amazonaws.com/compute-type
 kubectl -n kube-system get deployment coredns
 ```
 
-The node group list must be empty. The Fargate profile list must contain the system, platform-addons, and future-workloads profiles. CoreDNS must become available on Fargate. Nodes are created on demand, so `kubectl get nodes` can be empty until matching Pods require capacity; any displayed nodes must be labeled `fargate`.
+The node group list must contain `<cluster>-general`. The Fargate profile list must contain the system, platform-addons, and future-workloads profiles. CoreDNS must become available on Fargate. `kubectl get nodes` shows three EC2 nodes (one per zone) plus Fargate nodes created on demand for Fargate Pods.
 
 ## Namespace contract
 
-Fargate scheduling is limited to `kube-system`, `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and future `apps-*` namespaces. Workloads outside these selectors do not receive Fargate capacity. Do not create managed node groups or other non-Fargate compute for this platform.
+Fargate scheduling is limited to `kube-system`, `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and future `apps-*` namespaces. Workloads outside these selectors do not receive Fargate capacity. Every other namespace schedules onto the general node group; see the Fargate namespace contract in CLAUDE.md.

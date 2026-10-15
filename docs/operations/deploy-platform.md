@@ -1,6 +1,6 @@
 # Deploy the platform
 
-Start-from-scratch procedure for the Fargate-only `platform` environment. Follow the stages in order; each stage has a gate that must pass before the next one begins.
+Start-from-scratch procedure for the Fargate-plus-node-group `platform` environment. Follow the stages in order; each stage has a gate that must pass before the next one begins.
 
 Read [why the apply is staged](#why-the-apply-is-staged) before your first deployment. A single `terraform apply` of `environments/platform` cannot succeed.
 
@@ -66,12 +66,15 @@ Apply only the Identity Center group and the CodeConnections connection first, b
 
 ```bash
 terraform -chdir=environments/platform apply \
+  -target=aws_budgets_budget.account_monthly \
   -target=aws_identitystore_group.argocd_admins \
   -target=aws_identitystore_group_membership.argocd_admins \
   -target=aws_codeconnections_connection.github
 ```
 
-A new connection is created in `PENDING`. Complete the handshake in **AWS Developer Tools → Settings → Connections**, restricting the GitHub App installation to the single GitOps repository. See [GitHub CodeConnections](github-connection.md).
+A new connection is created in `PENDING`. Complete the handshake in **AWS Developer Tools → Settings → Connections**, restricting the GitHub App installation to the GitOps repository and any workload repository Argo CD must read (for Cashight: `cashight`). See [GitHub CodeConnections](github-connection.md).
+
+The budget is account-wide and alerts by email at 50/80/100% of actual and 100% of forecast spend. Applying it first means the alarm exists before the cluster costs anything.
 
 Gate:
 
@@ -90,7 +93,7 @@ terraform -chdir=environments/platform plan -target=module.platform_cluster -out
 terraform -chdir=environments/platform apply tfplan
 ```
 
-Review the saved plan before applying. On a first deployment it creates roughly 80 resources: one VPC with six subnets across three AZs and one NAT gateway, the EKS cluster, three Fargate profiles, two KMS keys, four CloudWatch log groups, VPC Flow Logs, the CoreDNS add-on, IRSA roles, and the three EKS capabilities. Terraform prints a `Resource targeting is in effect` warning; that is expected here.
+Review the saved plan before applying. On a first deployment it creates roughly 80 resources: one VPC with six subnets across three AZs and one NAT gateway, the EKS cluster, three Fargate profiles, two KMS keys, four CloudWatch log groups, VPC Flow Logs, the CoreDNS add-on, IRSA roles, the three EKS capabilities, one managed node group (three Graviton nodes), the VPC CNI, kube-proxy, Pod Identity Agent and EBS CSI add-ons, two Pod Identity roles and associations, and two security-group rules. Terraform prints a `Resource targeting is in effect` warning; that is expected here.
 
 Expect 20–30 minutes, most of it the EKS control plane and the capabilities.
 
@@ -126,12 +129,13 @@ terraform -chdir=environments/platform untaint 'module.platform_cluster.module.e
 terraform -chdir=environments/platform plan -target=module.platform_cluster -detailed-exitcode   # expect 0
 ```
 
-Gate — no EC2 compute anywhere:
+Gate — the node group is up, one node per AZ:
 
 ```bash
 cluster="$(terraform -chdir=environments/platform output -raw cluster_name)"
-aws eks list-nodegroups --cluster-name "$cluster" --query 'length(nodegroups)' --output text   # expect 0
-aws eks list-fargate-profiles --cluster-name "$cluster" --output text                          # expect 3
+aws eks describe-nodegroup --cluster-name "$cluster" --nodegroup-name "${cluster}-general" --query 'nodegroup.status' --output text   # expect ACTIVE
+kubectl get nodes -L eks.amazonaws.com/compute-type,topology.kubernetes.io/zone,kubernetes.io/arch                                    # expect 3 arm64 EC2 nodes in 3 zones, plus fargate-ip-* nodes
+aws eks list-fargate-profiles --cluster-name "$cluster" --output text                                                                  # expect 3
 ```
 
 ## Stage 5 — Capability readiness
@@ -174,7 +178,7 @@ kubectl -n argocd get applicationsets
 kubectl -n argocd get applications -o wide
 ```
 
-Expected: the root plus four child ApplicationSets, and every Application eventually `Synced` / `Healthy`. `config-workloads` targets an intentionally empty directory and stays healthy through `allowEmpty`.
+Expected: the root plus seven child ApplicationSets (addons, observability, kro-definitions, workloads, workload-charts, storage, namespaces), and every Application eventually `Synced` / `Healthy`. `config-workloads` targets an intentionally empty directory and stays healthy through `allowEmpty`.
 
 Controllers land on Fargate only when their namespace matches a profile selector:
 
@@ -183,7 +187,7 @@ kubectl get nodes -L eks.amazonaws.com/compute-type
 kubectl get pods -A -o wide
 ```
 
-Expected: every node reports `fargate`, and Pods run in `kube-system`, `argo-rollouts`, `opentelemetry-operator-system`, and `amazon-cloudwatch`.
+Expected: Fargate nodes host kube-system's CoreDNS and load balancer controller, argo-rollouts, cert-manager, opentelemetry-operator-system and amazon-cloudwatch. Everything else, including keda and kube-system's DaemonSets and EBS CSI controller, runs on the three EC2 nodes.
 
 ## Stage 8 — Acceptance
 
@@ -194,7 +198,7 @@ Expected: every node reports `fargate`, and Pods run in `kube-system`, `argo-rol
 
 Gate: `verify-platform.sh` prints `PASS` on every assertion and exits `0`; `check-drift.sh` reports detailed exit code `0` for both stateful roots. See [validate the platform](validate-platform.md).
 
-Confirm the plan's non-goals still hold: no Ingress, no LoadBalancer Service, no `apps-*` workload, and no EC2 node group.
+Run `EXPECT_WORKLOADS=true ./scripts/verify-platform.sh` once workloads such as Jenkins are deployed.
 
 ## Recovery
 

@@ -53,4 +53,4 @@ kubectl -n cert-manager rollout status deployment/cert-manager-webhook
 kubectl -n opentelemetry-operator-system rollout status deployment/opentelemetry-operator
 ```
 
-Do not install `amazon-cloudwatch-observability` or Network Flow Monitor agent add-ons. They are not supported on this Fargate-only platform. Configure the in-cluster ADOT collector and Fargate log-routing ConfigMap through GitOps; Terraform owns only the AWS resources in this document.
+Do not install `amazon-cloudwatch-observability` or Network Flow Monitor agent add-ons. They are not supported on Fargate, where this platform's observability add-ons run. Configure the in-cluster ADOT collector and Fargate log-routing ConfigMap through GitOps; Terraform owns only the AWS resources in this document.

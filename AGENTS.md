@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository manages one Fargate-only EKS platform. Keep application deployments and architecture improvements in separate plans.
+This repository manages one EKS platform: Fargate for platform add-ons plus one Graviton managed node group for workloads. Keep application deployments and architecture improvements in separate plans.
 
 ## Validation
 

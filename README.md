@@ -2,7 +2,7 @@
 
 # AWS EKS Fargate Platform Infrastructure
 
-**Terraform and GitOps blueprint for a serverless Amazon EKS platform running exclusively on AWS Fargate.**
+**Terraform and GitOps blueprint for an Amazon EKS platform: Fargate for platform add-ons, a Graviton node group for workloads.**
 
 [![Terraform](https://img.shields.io/badge/Terraform-1.10%2B-844FBA?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Amazon EKS](https://img.shields.io/badge/Amazon%20EKS-1.35-FF9900)](https://aws.amazon.com/eks/)
@@ -26,7 +26,9 @@ Start at [Getting Started](#getting-started).
 The repository provides one environment named `platform` with:
 
 - A three-Availability-Zone VPC and private Fargate scheduling.
-- Amazon EKS with no EC2 node groups, Auto Mode, or Karpenter.
+- Amazon EKS with Fargate for platform add-ons and one fixed-size Graviton managed node group (three `t4g.large` by default); no Auto Mode or Karpenter.
+- EBS CSI driver with a default encrypted `gp3` StorageClass, EKS Pod Identity, and NetworkPolicy enforcement in the VPC CNI.
+- KEDA for event-driven Pod scaling, and guarded tenant namespaces from the `namespace-config` chart.
 - AWS-managed Argo CD, ACK, and kro EKS Capabilities.
 - GitHub as the GitOps source of truth through AWS CodeConnections.
 - Terraform-managed S3/KMS remote state using native S3 lockfiles.

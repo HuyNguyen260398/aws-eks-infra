@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-Terraform + GitOps blueprint for a single Amazon EKS platform (`environments/platform`) that runs **exclusively on AWS Fargate** — no EC2 node groups, no Auto Mode, no Karpenter. Platform controllers come from AWS-managed *EKS Capabilities* (Argo CD, ACK, kro) rather than Helm installs.
+Terraform + GitOps blueprint for a single Amazon EKS platform (`environments/platform`). Platform add-ons run on **AWS Fargate**; workloads that need EBS volumes, DaemonSets or EKS Pod Identity run on one fixed-size **EKS managed node group** of Graviton instances (`<cluster>-general`, three `t4g.large` by default). No Auto Mode, no Karpenter. Platform controllers come from AWS-managed *EKS Capabilities* (Argo CD, ACK, kro) rather than Helm installs.
 
 ## Commands
 
@@ -35,7 +35,7 @@ Operational scripts (require AWS creds + kubeconfig; not part of CI):
 
 ```bash
 ./scripts/verify-prerequisites.sh   # tool + AWS account preflight
-./scripts/verify-platform.sh        # acceptance: capabilities ACTIVE, zero node groups, Apps Synced/Healthy
+./scripts/verify-platform.sh        # acceptance: capabilities ACTIVE, node group + add-ons, Apps Synced/Healthy
 ./scripts/check-drift.sh            # plan -refresh-only -detailed-exitcode on both stateful roots
 ./scripts/destroy-platform.sh "destroy platform"   # refuses without the literal argument
 ```
@@ -77,13 +77,22 @@ The GitOps repo URL is not a plain GitHub URL — it is a CodeConnections Git-HT
 
 ### Fargate namespace contract
 
-Fargate profiles in `modules/platform_cluster/eks.tf` select only: `kube-system`, `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and `apps-*`. A Pod in any other namespace gets no capacity and stays Pending. Adding a platform component means adding its namespace to a Fargate profile selector *and* to the GitOps config in the same change.
+Fargate profiles in `modules/platform_cluster/eks.tf` select: CoreDNS and the AWS Load Balancer Controller in `kube-system` (by label, not the whole namespace), `argo-rollouts`, `cert-manager`, `opentelemetry-operator-system`, `amazon-cloudwatch`, and `apps-*`. Every other Pod lands on the general node group. Two rules follow:
+
+- A Pod using EKS Pod Identity, an EBS volume, or a DaemonSet must **not** match a Fargate selector. Pod Identity and DaemonSets do not work on Fargate.
+- Tenant namespaces that need EC2 (for example `cashight`) are declared in `gitops/platform/config/namespaces/values.yaml` and must not match `apps-*`.
+
+Adding a Fargate platform component still means adding its namespace to a profile selector *and* to the GitOps config in the same change. Fargate Pods carry the cluster primary security group and node-group Pods the node security group; `compute_ec2.tf` opens the two to each other.
 
 ### Public access contract
 
 Reaching a workload from the internet is a **pure-GitOps change** — Terraform has no public-access variables, outputs or annotations. The workload's Ingress joins the `platform-public` IngressGroup, which the load balancer controller assembles into one shared internet-facing ALB named `platform-public`, routing by path prefix (`/jenkins`, …) over HTTP on port 80.
 
 Four annotations are group-level and must be byte-identical on every member — `group.name`, `scheme`, `load-balancer-name`, `listen-ports` — because a mismatch stops the controller reconciling the whole group, not just the new workload. The app must serve under its own path prefix; ALB path rewriting is not used. See `docs/operations/public-workload-access.md` for the block to copy.
+
+### Published identifiers
+
+`environments/platform/published.tf` writes non-secret identifiers to SSM under `/<resource_prefix>/platform/`: `cluster-name`, `alb-group-name`, `keda-operator-role-arn` and `codeconnections-git-http-base`. Workload repositories read these instead of hardcoding them. `alb-group-name` restates the GitOps IngressGroup name; Terraform still does not configure the ALB.
 
 ## Conventions
 

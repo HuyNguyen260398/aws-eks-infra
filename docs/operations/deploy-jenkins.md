@@ -1,6 +1,6 @@
 # Deploy Jenkins
 
-Jenkins is the first example workload on the Fargate-only platform. It is
+Jenkins is the first example workload on the platform, and runs on Fargate. It is
 deployed by Argo CD from the upstream `jenkins/jenkins` Helm chart plus the
 local `jenkins-storage` chart, and runs entirely on AWS Fargate.
 

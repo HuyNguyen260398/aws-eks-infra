@@ -34,9 +34,18 @@ Prints one `PASS`/`FAIL` line per assertion and exits nonzero if any fail.
 **Platform invariants — always checked:**
 
 - CodeConnections `AVAILABLE`, EKS and all Fargate profiles `ACTIVE`
-- `aws eks list-nodegroups` empty, **and** every node labelled
-  `eks.amazonaws.com/compute-type=fargate`. The node-group check alone does not
-  catch self-managed EC2 capacity
+- Node group `<cluster>-general` `ACTIVE`, `EXPECTED_NODES` (default 3) Ready
+  arm64 EC2 nodes, all from that node group, across `min(EXPECTED_NODES, 3)`
+  zones
+- Add-ons `vpc-cni` (with `enableNetworkPolicy`), `kube-proxy`,
+  `eks-pod-identity-agent`, `coredns`, `aws-ebs-csi-driver` `ACTIVE`
+- KEDA rolled out, its external metrics APIService `Available`, and every
+  `keda` and EBS CSI controller Pod on EC2 (Pod Identity does not work on
+  Fargate)
+- Default StorageClass `gp3`
+- Each `WORKLOAD_NAMESPACES` namespace (default `cashight`) enforces Pod
+  Security `restricted` and has the three default NetworkPolicies and a quota
+- The four SSM parameters under `PARAMETER_PREFIX` exist
 - Argo CD, ACK, and kro capabilities `ACTIVE`
 - CoreDNS, AWS Load Balancer Controller, Argo Rollouts, cert-manager, and the
   OpenTelemetry operator available
