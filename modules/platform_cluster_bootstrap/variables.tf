@@ -42,23 +42,3 @@ variable "aws_load_balancer_controller_role_arn" {
   description = "IRSA role ARN for the AWS Load Balancer Controller; populated when that controller is added."
   type        = string
 }
-
-variable "adot_role_arn" {
-  description = "IRSA role ARN for the ADOT collector service account."
-  type        = string
-}
-
-variable "fargate_log_group_name" {
-  description = "CloudWatch log group receiving Fargate container logs."
-  type        = string
-}
-
-variable "efs_file_system_id" {
-  description = "ID of the EFS filesystem backing platform application storage."
-  type        = string
-}
-
-variable "jenkins_efs_access_point_id" {
-  description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
-  type        = string
-}

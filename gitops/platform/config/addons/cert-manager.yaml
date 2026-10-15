@@ -20,8 +20,8 @@ spec:
     metadata:
       name: '{{ .name }}-cert-manager'
       annotations:
-        # Must be established before the OpenTelemetry operator, which issues
-        # its webhook certificates through cert-manager.
+        # Must be established before the AWS Load Balancer Controller, which
+        # issues its webhook certificate through cert-manager.
         argocd.argoproj.io/sync-wave: "0"
     spec:
       project: default
@@ -34,9 +34,8 @@ spec:
           values: |
             crds:
               enabled: true
-            # Fargate gives every Pod its own node, so a single replica per
-            # component is the cheapest layout that still satisfies the
-            # operator's webhook dependency.
+            # A single replica per component is the cheapest layout that still
+            # serves the load balancer controller's webhook certificate.
             replicaCount: 1
             webhook:
               replicaCount: 1

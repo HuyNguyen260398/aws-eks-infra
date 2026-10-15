@@ -28,20 +28,6 @@ resource "aws_iam_role" "argocd_capability" {
   tags = var.tags
 }
 
-resource "aws_iam_role" "ack_capability" {
-  name               = "${local.cluster_name}-ack-capability"
-  assume_role_policy = data.aws_iam_policy_document.capability_assume_role.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role" "kro_capability" {
-  name               = "${local.cluster_name}-kro-capability"
-  assume_role_policy = data.aws_iam_policy_document.capability_assume_role.json
-
-  tags = var.tags
-}
-
 resource "aws_iam_role_policy" "argocd_codeconnections" {
   name   = "${local.cluster_name}-argocd-codeconnections"
   role   = aws_iam_role.argocd_capability.id

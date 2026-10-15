@@ -92,10 +92,6 @@ module "platform_cluster_bootstrap" {
   vpc_id                                = module.platform_cluster.vpc_id
   aws_region                            = var.aws_region
   aws_load_balancer_controller_role_arn = module.platform_cluster.aws_load_balancer_controller_role_arn
-  adot_role_arn                         = module.platform_cluster.adot_role_arn
-  fargate_log_group_name                = module.platform_cluster.fargate_log_group_name
-  efs_file_system_id                    = module.platform_cluster.efs_file_system_id
-  jenkins_efs_access_point_id           = module.platform_cluster.jenkins_efs_access_point_id
 
   depends_on = [module.platform_cluster]
 }
