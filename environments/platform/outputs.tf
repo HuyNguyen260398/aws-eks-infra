@@ -77,3 +77,8 @@ output "node_security_group_id" {
   description = "Security group attached to general node-group instances and their Pods."
   value       = module.platform_cluster.node_security_group_id
 }
+
+output "keda_operator_role_arn" {
+  description = "ARN of the IAM role the KEDA operator runs as. Scaler roles trust this ARN."
+  value       = module.platform_cluster.keda_operator_role_arn
+}

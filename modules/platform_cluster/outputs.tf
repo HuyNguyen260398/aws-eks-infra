@@ -115,3 +115,8 @@ output "ebs_csi_driver_role_arn" {
   description = "ARN of the IAM role the EBS CSI controller assumes through EKS Pod Identity."
   value       = aws_iam_role.ebs_csi_driver.arn
 }
+
+output "keda_operator_role_arn" {
+  description = "ARN of the IAM role the KEDA operator runs as. Scaler roles trust this ARN."
+  value       = aws_iam_role.keda_operator.arn
+}
