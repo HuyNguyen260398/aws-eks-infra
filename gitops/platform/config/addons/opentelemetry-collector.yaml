@@ -1,0 +1,168 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: opentelemetry-collector
+  namespace: argocd
+spec:
+  # Required: the template below uses Go-template syntax ({{ .name }},
+  # {{ .metadata.annotations.* }}). Without this, Argo CD falls back to legacy
+  # fasttemplate, which only understands {{name}}/{{server}} and cannot
+  # traverse annotations - every Application fails destination validation.
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform_cluster: "true"
+  template:
+    metadata:
+      name: '{{ .name }}-opentelemetry-collector'
+    spec:
+      project: default
+      # Two sources: the upstream chart, and this repository's
+      # config/observability (the Pod Security-labelled Namespace and the
+      # leader-election Lease Role, which the chart does not render).
+      # scripts/render-collector.sh renders both; make collector-check asserts
+      # on the result.
+      sources:
+        - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+          chart: opentelemetry-collector
+          targetRevision: 0.175.0
+          helm:
+            # Pinned so object names stay deterministic: workloads send OTLP
+            # to otel-collector.observability:4318, and the Pod Identity
+            # association (Terraform: modules/platform_cluster/iam_pod_identity.tf)
+            # names the otel-collector ServiceAccount.
+            releaseName: otel-collector
+            values: |
+              fullnameOverride: otel-collector
+              mode: daemonset
+              image:
+                repository: otel/opentelemetry-collector-contrib
+                tag: 0.161.0
+              command:
+                name: otelcol-contrib
+
+              # Pod Identity binds the IAM role by namespace and name; no
+              # role annotation.
+              serviceAccount:
+                create: true
+                name: otel-collector
+
+              clusterRole:
+                create: true
+                rules:
+                  - apiGroups: [""]
+                    resources: ["pods", "namespaces", "nodes", "nodes/stats"]
+                    verbs: ["get", "list", "watch"]
+                  - apiGroups: ["apps"]
+                    resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
+                    verbs: ["get", "list", "watch"]
+                  - apiGroups: ["batch"]
+                    resources: ["jobs"]
+                    verbs: ["get", "list", "watch"]
+
+              # A DaemonSet gets no Service unless asked. internalTrafficPolicy
+              # stays Local (chart default), so a Pod reaches the collector on
+              # its own node.
+              service:
+                enabled: true
+
+              # OTLP/HTTP only. hostPort 0 keeps the port off the node's public
+              # IP; workloads use the Service.
+              ports:
+                otlp:
+                  enabled: false
+                otlp-http:
+                  enabled: true
+                  hostPort: 0
+                jaeger-compact:
+                  enabled: false
+                jaeger-thrift:
+                  enabled: false
+                jaeger-grpc:
+                  enabled: false
+                zipkin:
+                  enabled: false
+                metrics:
+                  enabled: false
+
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+
+              # Pod log files on the node are root-owned 0640, so the collector
+              # reads them as UID 0. Everything else is locked down.
+              securityContext: &hardened
+                runAsUser: 0
+                runAsGroup: 0
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+
+              # The init container fetches the Grafana Cloud endpoint, instance
+              # ID and write token from SSM (EKS Pod Identity) into a
+              # memory-backed volume. No Kubernetes Secret exists and nothing
+              # secret is in Git. A missing or empty parameter fails the Pod
+              # here instead of starting a collector that is refused upstream.
+              initContainers:
+                - name: fetch-grafana-cloud
+                  image: public.ecr.aws/aws-cli/aws-cli:2.37.9
+                  command: ["/bin/sh", "-ec"]
+                  args:
+                    - |
+                      for p in otlp-token otlp-endpoint instance-id; do
+                        aws ssm get-parameter --name "$PREFIX/$p" --with-decryption \
+                          --query Parameter.Value --output text > "/secrets/$p"
+                        test -s "/secrets/$p" || { echo "empty SSM parameter $PREFIX/$p" >&2; exit 1; }
+                      done
+                  env:
+                    - name: AWS_REGION
+                      value: '{{ .metadata.annotations.aws_region }}'
+                    - name: HOME
+                      value: /aws-home
+                    - name: PREFIX
+                      value: '{{ .metadata.annotations.platform_parameter_prefix }}/grafana-cloud'
+                  securityContext: *hardened
+                  volumeMounts:
+                    - name: secrets
+                      mountPath: /secrets
+                    - name: aws-home
+                      mountPath: /aws-home
+
+              extraVolumes:
+                - name: varlogpods
+                  hostPath:
+                    path: /var/log/pods
+                    type: Directory
+                - name: secrets
+                  emptyDir:
+                    medium: Memory
+                    sizeLimit: 1Mi
+                - name: aws-home
+                  emptyDir: {}
+              extraVolumeMounts:
+                - name: varlogpods
+                  mountPath: /var/log/pods
+                  readOnly: true
+                - name: secrets
+                  mountPath: /secrets
+                  readOnly: true
+        - repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
+          targetRevision: '{{ .metadata.annotations.gitops_revision }}'
+          path: gitops/platform/config/observability
+      destination:
+        server: '{{ .server }}'
+        namespace: observability
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
