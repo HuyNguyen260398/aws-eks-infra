@@ -119,7 +119,8 @@ spec:
                     - |
                       for p in otlp-token otlp-endpoint instance-id; do
                         aws ssm get-parameter --name "$PREFIX/$p" --with-decryption \
-                          --query Parameter.Value --output text > "/secrets/$p"
+                          --query Parameter.Value --output text > "/secrets/$p" ||
+                          { echo "cannot read SSM parameter $PREFIX/$p" >&2; exit 1; }
                         test -s "/secrets/$p" || { echo "empty SSM parameter $PREFIX/$p" >&2; exit 1; }
                       done
                   env:
@@ -154,6 +155,183 @@ spec:
                 - name: secrets
                   mountPath: /secrets
                   readOnly: true
+
+              # Merged over the chart's default config: the defaults this
+              # platform does not use are nulled, and every pipeline is
+              # redefined in full (lists replace, maps merge).
+              config:
+                extensions:
+                  basicauth/grafana:
+                    client_auth:
+                      username: ${file:/secrets/instance-id}
+                      password: ${file:/secrets/otlp-token}
+                  # Only one collector reports k8s_cluster once there is more
+                  # than one node (Lease Role: config/observability).
+                  k8s_leader_elector:
+                    auth_type: serviceAccount
+                    lease_name: otel-collector-k8s-cluster
+                    lease_namespace: observability
+
+                receivers:
+                  jaeger: null
+                  zipkin: null
+                  otlp:
+                    protocols:
+                      grpc: null
+                      http:
+                        endpoint: ${env:MY_POD_IP}:4318
+                  # stdout of every Pod on the node, add-ons included; the
+                  # collector's own logs are excluded. Bodies pass unchanged:
+                  # Cashight's logger strips sensitive fields before printing.
+                  file_log:
+                    include:
+                      - /var/log/pods/*/*/*.log
+                    exclude:
+                      - /var/log/pods/observability_otel-collector*_*/*/*.log
+                    start_at: end
+                    include_file_path: true
+                    operators:
+                      - type: container
+                        id: container-parser
+                  kubeletstats:
+                    auth_type: serviceAccount
+                    endpoint: https://${env:OTEL_K8S_NODE_IP}:10250
+                    insecure_skip_verify: true
+                    collection_interval: 60s
+                    metric_groups: [node, pod, container]
+                    # Network metrics carry interface and direction
+                    # attributes and nothing here alerts on them.
+                    metrics:
+                      k8s.node.network.io:
+                        enabled: false
+                      k8s.node.network.errors:
+                        enabled: false
+                      k8s.pod.network.io:
+                        enabled: false
+                      k8s.pod.network.errors:
+                        enabled: false
+                  k8s_cluster:
+                    auth_type: serviceAccount
+                    collection_interval: 60s
+                    k8s_leader_elector: k8s_leader_elector
+                    node_conditions_to_report: [Ready]
+                  # Self-monitoring. Only the label-free process metrics are
+                  # kept; alert rule "Telemetry stopped" needs uptime.
+                  prometheus:
+                    config:
+                      scrape_configs:
+                        - job_name: opentelemetry-collector
+                          scrape_interval: 60s
+                          static_configs:
+                            - targets:
+                                - ${env:MY_POD_IP}:8888
+                          metric_relabel_configs:
+                            - source_labels: [__name__]
+                              regex: otelcol_process_.*
+                              action: keep
+
+                processors:
+                  # Below the 256Mi container limit, so the collector refuses
+                  # data instead of being OOM-killed on a full node.
+                  memory_limiter:
+                    check_interval: 1s
+                    limit_percentage: null
+                    spike_limit_percentage: null
+                    limit_mib: 200
+                    spike_limit_mib: 40
+                  k8s_attributes:
+                    auth_type: serviceAccount
+                    passthrough: false
+                    filter:
+                      node_from_env_var: OTEL_K8S_NODE_NAME
+                    extract:
+                      metadata:
+                        - k8s.namespace.name
+                        - k8s.pod.name
+                        - k8s.container.name
+                        - k8s.node.name
+                    pod_association:
+                      - sources:
+                          - from: connection
+                  # Attribute allowlist. Keep in step with Cashight's
+                  # scripts/local/telemetry-audit.ts (ALLOWED_ATTRIBUTES).
+                  # Data-point attributes are allowlisted for Cashight's own
+                  # metrics only: infra receivers emit fixed attribute sets,
+                  # and stripping those would merge distinct series. k8s
+                  # resource attributes are copied onto k8s and container
+                  # data points so PromQL can filter on them whether or not
+                  # the backend promotes resource attributes to labels.
+                  transform/allowlist:
+                    error_mode: ignore
+                    trace_statements:
+                      - context: resource
+                        statements:
+                          - 'keep_matching_keys(attributes, "^(service|k8s)\\.")'
+                      - context: span
+                        statements:
+                          - >-
+                            keep_keys(attributes, ["http.request.method", "http.route", "http.response.status_code",
+                            "cashight.worker.outcome"])
+                      - context: spanevent
+                        statements:
+                          - 'keep_keys(attributes, [])'
+                    metric_statements:
+                      - context: resource
+                        statements:
+                          - 'keep_matching_keys(attributes, "^(service|k8s)\\.")'
+                      - context: datapoint
+                        statements:
+                          - >-
+                            keep_keys(attributes, ["http.request.method", "http.route", "http.response.status_code",
+                            "outcome", "error_code"]) where resource.attributes["service.namespace"] == "cashight"
+                          - >-
+                            set(attributes["k8s.namespace.name"], resource.attributes["k8s.namespace.name"]) where
+                            IsMatch(metric.name, "^(k8s|container)\\.") and resource.attributes["k8s.namespace.name"]
+                            != nil
+                          - >-
+                            set(attributes["k8s.pod.name"], resource.attributes["k8s.pod.name"]) where
+                            IsMatch(metric.name, "^(k8s|container)\\.") and resource.attributes["k8s.pod.name"] != nil
+                          - >-
+                            set(attributes["k8s.container.name"], resource.attributes["k8s.container.name"]) where
+                            IsMatch(metric.name, "^(k8s|container)\\.") and resource.attributes["k8s.container.name"]
+                            != nil
+                          - >-
+                            set(attributes["k8s.node.name"], resource.attributes["k8s.node.name"]) where
+                            IsMatch(metric.name, "^(k8s|container)\\.") and resource.attributes["k8s.node.name"] !=
+                            nil
+                    log_statements:
+                      - context: resource
+                        statements:
+                          - 'keep_matching_keys(attributes, "^(service|k8s)\\.")'
+                      - context: log
+                        statements:
+                          - 'keep_keys(attributes, ["log.iostream"])'
+                  batch: {}
+
+                exporters:
+                  debug: null
+                  # One endpoint carries all three signals.
+                  otlp_http:
+                    endpoint: ${file:/secrets/otlp-endpoint}
+                    auth:
+                      authenticator: basicauth/grafana
+
+                service:
+                  extensions: [health_check, basicauth/grafana, k8s_leader_elector]
+                  pipelines:
+                    traces:
+                      receivers: [otlp]
+                      processors: [memory_limiter, k8s_attributes, transform/allowlist, batch]
+                      exporters: [otlp_http]
+                    metrics:
+                      receivers: [otlp, kubeletstats, k8s_cluster, prometheus]
+                      processors: [memory_limiter, k8s_attributes, transform/allowlist, batch]
+                      exporters: [otlp_http]
+                    # Logs come from file_log only, so Loki holds one copy.
+                    logs:
+                      receivers: [file_log]
+                      processors: [memory_limiter, k8s_attributes, transform/allowlist, batch]
+                      exporters: [otlp_http]
         - repoURL: '{{ .metadata.annotations.gitops_repo_url }}'
           targetRevision: '{{ .metadata.annotations.gitops_revision }}'
           path: gitops/platform/config/observability

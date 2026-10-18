@@ -3,9 +3,15 @@
 #
 # Renders gitops/platform/config/addons/opentelemetry-collector.yaml through
 # scripts/render-collector.sh, then asserts on the rendered manifests (the
-# workload shape: namespace, RBAC, pod, token delivery). Exits 1 on any FAIL.
+# workload shape: namespace, RBAC, pod, token delivery) and on the collector
+# config (pipeline, allowlist, exporter), and runs `otelcol-contrib validate`
+# on the cluster and local configs. Exits 1 on any FAIL.
 #
-# Needs helm, kubectl, yq (mikefarah v4) and kubeconform. Run: make collector-check
+# Component names are the collector's current ones (file_log, k8s_attributes,
+# otlp_http); the chart rewrites the deprecated spellings to these anyway.
+#
+# Needs helm, kubectl, yq (mikefarah v4), kubeconform, openssl and Docker.
+# Run: make collector-check
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -119,5 +125,84 @@ if kubeconform -strict -summary -ignore-missing-schemas "$manifests" >/dev/null;
 else
   fail_line "kubeconform"
 fi
+
+# -------------------------------------------------------------------- config ---
+
+config="$out/config.yaml"
+local_config="$out/config-local.yaml"
+cq() { yq "$1" "$config"; }
+
+assert_eq "Receivers" "$(cq '.receivers | keys | sort | join(",")')" "file_log,k8s_cluster,kubeletstats,otlp,prometheus"
+assert_eq "OTLP HTTP only" "$(cq '.receivers.otlp.protocols | keys | join(",")')" http
+if [[ "$(cq '.receivers.otlp.protocols.http.endpoint')" == *:4318 ]]; then pass "OTLP on 4318"; else fail_line "OTLP on 4318"; fi
+assert_eq "file_log reads pod logs" "$(cq '.receivers.file_log.include | join(",")')" "/var/log/pods/*/*/*.log"
+assert_eq "file_log excludes the collector" \
+  "$(cq '.receivers.file_log.exclude | contains(["/var/log/pods/observability_otel-collector*_*/*/*.log"])')" true
+assert_eq "k8s_cluster is leader-elected" \
+  "$(cq '.receivers.k8s_cluster.k8s_leader_elector + "," + (.service.extensions | contains(["k8s_leader_elector"]) | tostring)')" \
+  "k8s_leader_elector,true"
+assert_eq "Self-scrape keeps process metrics only" \
+  "$(cq '[.receivers.prometheus.config.scrape_configs[].metric_relabel_configs[] | .action + ":" + .regex] | join(",")')" \
+  "keep:otelcol_process_.*"
+assert_empty "Processor order" "$(cq '.service.pipelines | to_entries[] |
+  select((.value.processors | join(",")) != "memory_limiter,k8s_attributes,transform/allowlist,batch") | .key')"
+limit="$(cq '.processors.memory_limiter.limit_mib + .processors.memory_limiter.spike_limit_mib')"
+if [ "$limit" -lt 256 ]; then pass "memory_limiter under the 256Mi limit ($limit MiB)"; else fail_line "memory_limiter under the 256Mi limit (got $limit MiB)"; fi
+assert_eq "memory_limiter uses fixed MiB" \
+  "$(cq '.processors.memory_limiter | has("limit_percentage") or has("spike_limit_percentage")')" false
+assert_eq "k8s_attributes minimal" \
+  "$(cq '.processors.k8s_attributes.extract | (.metadata | join(",")) + ";" + ((.labels // []) | length | tostring) + ";" + ((.annotations // []) | length | tostring)')" \
+  "k8s.namespace.name,k8s.pod.name,k8s.container.name,k8s.node.name;0;0"
+assert_empty "One exporter per pipeline" "$(cq '.service.pipelines | to_entries[] | select((.value.exporters | join(",")) != "otlp_http") | .key')"
+assert_eq "Exporters" "$(cq '.exporters | keys | join(",")')" otlp_http
+# shellcheck disable=SC2016 # the ${file:...} references are literal collector config
+assert_eq "Exporter auth" \
+  "$(cq '.exporters.otlp_http.endpoint + ";" + .exporters.otlp_http.auth.authenticator + ";" + .extensions["basicauth/grafana"].client_auth.username + ";" + .extensions["basicauth/grafana"].client_auth.password')" \
+  '${file:/secrets/otlp-endpoint};basicauth/grafana;${file:/secrets/instance-id};${file:/secrets/otlp-token}'
+assert_eq "Logs come from file_log only" "$(cq '.service.pipelines.logs.receivers | join(",")')" file_log
+assert_eq "Metrics receivers" "$(cq '.service.pipelines.metrics.receivers | sort | join(",")')" "k8s_cluster,kubeletstats,otlp,prometheus"
+assert_eq "Traces receivers" "$(cq '.service.pipelines.traces.receivers | join(",")')" otlp
+if grep -qE 'glc_|eyJ' "$config"; then fail_line "No inline credentials"; else pass "No inline credentials"; fi
+
+# The local variant differs only by the Kubernetes components and the local
+# file exporter and log labels (scripts/run-local-collector.sh).
+lq() { yq "$1" "$local_config"; }
+assert_eq "Local receivers" "$(lq '.receivers | keys | sort | join(",")')" "file_log,otlp,prometheus"
+assert_eq "Local processors" \
+  "$(lq '[.service.pipelines | to_entries[] | .key + "=" + (.value.processors | join(","))] | sort | join(" ")')" \
+  "logs=memory_limiter,transform/allowlist,transform/local,batch metrics=memory_limiter,transform/allowlist,batch traces=memory_limiter,transform/allowlist,batch"
+assert_eq "Local exporters" \
+  "$(lq '[.service.pipelines[] | .exporters | join(",")] | unique | join(" ")')" "otlp_http,file/local"
+assert_eq "Local reads /var/log/local" "$(lq '.receivers.file_log.include | join(",")')" "/var/log/local/*.log"
+assert_eq "Local has no k8s extension" "$(lq '.service.extensions | contains(["k8s_leader_elector"])')" false
+
+# ------------------------------------------------------------------ validate ---
+
+collector_image="$image"
+fixtures="$out/fixtures"
+mkdir -p "$fixtures/secrets" "$fixtures/serviceaccount"
+printf 'dummy-token' >"$fixtures/secrets/otlp-token"
+printf 'https://otlp.example.invalid/otlp' >"$fixtures/secrets/otlp-endpoint"
+printf '123456' >"$fixtures/secrets/instance-id"
+# In-cluster client config only reads these files at build time; nothing
+# connects. A real PEM is needed because the CA file is parsed.
+printf 'dummy' >"$fixtures/serviceaccount/token"
+printf 'observability' >"$fixtures/serviceaccount/namespace"
+openssl req -x509 -nodes -newkey rsa:2048 -days 1 -subj /CN=collector-check \
+  -keyout "$fixtures/serviceaccount/ca.key" -out "$fixtures/serviceaccount/ca.crt" >/dev/null 2>&1
+chmod -R a+rX "$out"
+
+for file in config.yaml config-local.yaml; do
+  if docker run --rm \
+    -e MY_POD_IP=0.0.0.0 -e OTEL_K8S_NODE_NAME=collector-check \
+    -e KUBERNETES_SERVICE_HOST=127.0.0.1 -e KUBERNETES_SERVICE_PORT=6443 \
+    -v "$out:/cfg:ro" -v "$fixtures/secrets:/secrets:ro" \
+    -v "$fixtures/serviceaccount:/var/run/secrets/kubernetes.io/serviceaccount:ro" \
+    "$collector_image" validate --config="/cfg/$file" >"$out/validate-$file.log" 2>&1; then
+    pass "otelcol-contrib validate $file"
+  else
+    fail_line "otelcol-contrib validate $file ($(tail -n 3 "$out/validate-$file.log" | tr '\n' ' '))"
+  fi
+done
 
 exit "$fail"
