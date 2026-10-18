@@ -27,15 +27,19 @@ that still runs it.
   delegation, kube-proxy, CoreDNS, EKS Pod Identity Agent.
 - **Managed Argo CD, opt-in** (`enable_argocd`, default `false`) through AWS
   CodeConnections. When on, it installs from `gitops/`: AWS Load Balancer
-  Controller, cert-manager, Argo Rollouts, KEDA, and the guarded `cashight`
+  Controller, cert-manager, Argo Rollouts, KEDA, the OpenTelemetry Collector, and the guarded `cashight`
   namespace (Pod Security `restricted`, default-deny NetworkPolicies, quota).
-- IAM for the load balancer controller (IRSA) and KEDA (EKS Pod Identity).
+- IAM for the load balancer controller (IRSA), KEDA and the OpenTelemetry
+  Collector (EKS Pod Identity).
 - An account-wide monthly **budget alarm**.
 - SSM parameters under `/<resource_prefix>/platform/` that Cashight's Terraform
   reads instead of hardcoding cluster identifiers.
 - S3/KMS remote state with native S3 lockfiles.
 
-Telemetry is not part of the platform yet; Cashight's observability plan adds it.
+Telemetry goes to the Grafana Cloud free tier through one OpenTelemetry Collector
+DaemonSet; the collector reads its tokens from SSM, so no Kubernetes Secret exists.
+Alerts, the dashboard and the uptime check are Cashight's `terraform/grafana/`; see
+Cashight's `docs/observability.md`.
 
 ## Cost
 
@@ -68,7 +72,7 @@ aws-eks-infra/
 ├── gitops/
 │   ├── platform/
 │   │   ├── bootstrap/                ApplicationSets Argo CD reconciles first
-│   │   ├── config/addons/            LB controller, cert-manager, Argo Rollouts, KEDA
+│   │   ├── config/addons/            LB controller, cert-manager, Argo Rollouts, KEDA, collector
 │   │   ├── config/namespaces/        Tenant namespaces (cashight)
 │   │   └── charts/namespace-config/  Namespace, quota, limits, NetworkPolicy chart
 │   └── workloads/manifests/          Plain workload manifests (empty placeholder)
