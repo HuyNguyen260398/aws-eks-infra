@@ -16,6 +16,7 @@ resource "kubernetes_secret_v1" "platform_cluster" {
       vpc_id                                = var.vpc_id
       aws_region                            = var.aws_region
       aws_load_balancer_controller_role_arn = var.aws_load_balancer_controller_role_arn
+      platform_parameter_prefix             = var.platform_parameter_prefix
     }
   }
 

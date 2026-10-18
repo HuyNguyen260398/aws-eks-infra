@@ -62,3 +62,52 @@ resource "aws_eks_pod_identity_association" "keda_operator" {
 
   tags = var.tags
 }
+
+# The OpenTelemetry Collector's init container reads the Grafana Cloud OTLP
+# endpoint, instance ID and write token from SSM into a memory-backed volume.
+# The SecureString is created by hand (Cashight docs/observability.md), so its
+# value never enters Terraform state. Parameters encrypted with the AWS-managed
+# aws/ssm key are decrypted through SSM only.
+data "aws_iam_policy_document" "otel_collector" {
+  statement {
+    sid       = "ReadGrafanaCloudParameters"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter"]
+    resources = ["arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.grafana_cloud_parameter_path}/*"]
+  }
+
+  statement {
+    sid       = "DecryptViaSsm"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = ["arn:aws:kms:${var.aws_region}:${data.aws_caller_identity.current.account_id}:key/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["ssm.${var.aws_region}.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "otel_collector" {
+  name               = "${local.cluster_name}-otel-collector"
+  assume_role_policy = data.aws_iam_policy_document.pod_identity_assume_role.json
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "otel_collector" {
+  name   = "${local.cluster_name}-otel-collector"
+  role   = aws_iam_role.otel_collector.id
+  policy = data.aws_iam_policy_document.otel_collector.json
+}
+
+resource "aws_eks_pod_identity_association" "otel_collector" {
+  cluster_name    = module.eks.cluster_name
+  namespace       = "observability"
+  service_account = "otel-collector"
+  role_arn        = aws_iam_role.otel_collector.arn
+
+  tags = var.tags
+}
