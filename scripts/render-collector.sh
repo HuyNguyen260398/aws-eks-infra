@@ -35,7 +35,7 @@ release="$(yq "$chart_source.helm.releaseName" "$appset")"
 values="$out/values.yaml"
 yq "$chart_source.helm.values" "$appset" |
   sed -e 's|{{ \.metadata\.annotations\.aws_region }}|ap-southeast-1|g' \
-    -e 's|{{ \.metadata\.annotations\.platform_parameter_prefix }}|/aws-eks-infra/platform|g' >"$values"
+    -e 's|{{ \.metadata\.annotations\.platform_parameter_prefix }}|/platform/aws-eks-infra|g' >"$values"
 if grep -n '{{' "$values" >&2; then
   echo "unreplaced Go-template placeholder in $appset helm values" >&2
   exit 1

@@ -98,6 +98,16 @@ for needle in otlp-token otlp-endpoint instance-id "test -s"; do
   [[ "$init_command" == *"$needle"* ]] || missing="$missing $needle"
 done
 assert_empty "Init fetches and checks every parameter" "${missing# }"
+# SSM rejects any name whose first path segment starts with aws or ssm.
+init_prefix="$(q "$init | .env[] | select(.name == \"PREFIX\") | .value")"
+if tr '[:upper:]' '[:lower:]' <<<"$init_prefix" | grep -qE '^/?(aws|ssm)'; then
+  fail_line "SSM prefix is not reserved (got '$init_prefix')"
+else
+  pass "SSM prefix is not reserved ($init_prefix)"
+fi
+# shellcheck disable=SC2016 # Matches literal Terraform; nothing should expand.
+assert_eq "Rendered SSM prefix matches published.tf" \
+  "$(grep -c 'platform_parameter_prefix = "/platform/${var.resource_prefix}"' environments/platform/published.tf)" 1
 
 # ---------------------------------------------------------------------- RBAC ---
 
