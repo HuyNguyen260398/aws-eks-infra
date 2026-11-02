@@ -191,9 +191,22 @@ assert_eq "Local has no k8s extension" "$(lq '.service.extensions | contains(["k
 collector_image="$image"
 fixtures="$out/fixtures"
 mkdir -p "$fixtures/secrets" "$fixtures/serviceaccount"
-printf 'dummy-token' >"$fixtures/secrets/otlp-token"
-printf 'https://otlp.example.invalid/otlp' >"$fixtures/secrets/otlp-endpoint"
-printf '123456' >"$fixtures/secrets/instance-id"
+# The secrets come from the init container's own script, run against a stub
+# aws that, like the real CLI's text output, ends each value with a newline.
+# ${file:...} keeps that newline, which makes the endpoint an invalid URL.
+mkdir -p "$fixtures/bin"
+cat >"$fixtures/bin/aws" <<'STUB'
+#!/bin/sh
+case "$*" in
+  *otlp-token*) echo dummy-token ;;
+  *otlp-endpoint*) echo https://otlp.example.invalid/otlp ;;
+  *instance-id*) echo 123456 ;;
+  *) exit 1 ;;
+esac
+STUB
+chmod +x "$fixtures/bin/aws"
+init_script="$(q "$init | .args[0]")"
+PATH="$fixtures/bin:$PATH" PREFIX=/check sh -ec "${init_script//\/secrets\//$fixtures/secrets/}"
 # In-cluster client config only reads these files at build time; nothing
 # connects. A real PEM is needed because the CA file is parsed.
 printf 'dummy' >"$fixtures/serviceaccount/token"

@@ -111,6 +111,8 @@ spec:
               # memory-backed volume. No Kubernetes Secret exists and nothing
               # secret is in Git. A missing or empty parameter fails the Pod
               # here instead of starting a collector that is refused upstream.
+              # The value goes through $(...) and printf '%s' to drop the CLI's
+              # trailing newline, which ${file:...} would otherwise keep.
               initContainers:
                 - name: fetch-grafana-cloud
                   image: public.ecr.aws/aws-cli/aws-cli:2.37.9
@@ -118,9 +120,10 @@ spec:
                   args:
                     - |
                       for p in otlp-token otlp-endpoint instance-id; do
-                        aws ssm get-parameter --name "$PREFIX/$p" --with-decryption \
-                          --query Parameter.Value --output text > "/secrets/$p" ||
+                        value="$(aws ssm get-parameter --name "$PREFIX/$p" --with-decryption \
+                          --query Parameter.Value --output text)" ||
                           { echo "cannot read SSM parameter $PREFIX/$p" >&2; exit 1; }
+                        printf '%s' "$value" > "/secrets/$p"
                         test -s "/secrets/$p" || { echo "empty SSM parameter $PREFIX/$p" >&2; exit 1; }
                       done
                   env:

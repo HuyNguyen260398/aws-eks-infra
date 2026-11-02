@@ -26,13 +26,15 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -m 700 "$work/secrets"
 
-# Same loop as the init container in the ApplicationSet.
+# Same loop as the init container in the ApplicationSet, including dropping the
+# CLI's trailing newline, which ${file:...} would otherwise keep.
 for p in otlp-token otlp-endpoint instance-id; do
-  aws ssm get-parameter --region "$region" --name "$prefix/$p" --with-decryption \
-    --query Parameter.Value --output text >"$work/secrets/$p" || {
+  value="$(aws ssm get-parameter --region "$region" --name "$prefix/$p" --with-decryption \
+    --query Parameter.Value --output text)" || {
     echo "cannot read SSM parameter $prefix/$p" >&2
     exit 1
   }
+  printf '%s' "$value" >"$work/secrets/$p"
   test -s "$work/secrets/$p" || {
     echo "empty SSM parameter $prefix/$p" >&2
     exit 1
