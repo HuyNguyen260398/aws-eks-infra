@@ -101,3 +101,13 @@ variable "node_count" {
     error_message = "node_count must be a whole number from 1 to 10."
   }
 }
+
+variable "grafana_cloud_parameter_path" {
+  description = "SSM path holding the Grafana Cloud OTLP parameters; the collector may read <path>/*."
+  type        = string
+
+  validation {
+    condition     = can(regex("^/[A-Za-z0-9_./-]+[^/]$", var.grafana_cloud_parameter_path))
+    error_message = "grafana_cloud_parameter_path must start with / and must not end with /."
+  }
+}

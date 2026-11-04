@@ -42,3 +42,8 @@ variable "aws_load_balancer_controller_role_arn" {
   description = "IRSA role ARN for the AWS Load Balancer Controller; populated when that controller is added."
   type        = string
 }
+
+variable "platform_parameter_prefix" {
+  description = "SSM prefix of the platform's parameters (/<resource_prefix>/platform); GitOps add-ons append their own path."
+  type        = string
+}

@@ -104,6 +104,8 @@ Managed Argo CD costs about USD 27/month plus about USD 1.32 per Argo CD Applica
 
 The apply is staged. `modules/platform_cluster_bootstrap` writes Argo CD objects with the `kubernetes` provider, and `kubernetes_manifest` validates against the live API server during **plan**, so the Argo CD `ApplicationSet` CRD must already exist — and it only arrives with the capability. Create the capability first, then the bootstrap.
 
+The three Grafana Cloud parameters (`<parameter prefix>/grafana-cloud/otlp-token`, `otlp-endpoint`, `instance-id`) must exist first; Cashight's `docs/observability.md` creates them. Without them the collector Pod stays in `Init:CrashLoopBackOff`, and its init container log names the missing parameter.
+
 Set `enable_argocd = true` in `terraform.tfvars`. Argo CD reads GitHub, not your working tree, so push the GitOps branch first; while it is unmerged, set `gitops_revision` to it.
 
 ```bash

@@ -4,7 +4,9 @@
 # GitOps workloads join (docs/operations/public-workload-access.md), and the
 # value below must stay identical to that annotation.
 locals {
-  platform_parameter_prefix = "/${var.resource_prefix}/platform"
+  # "platform" comes first because SSM reserves names starting with aws or ssm,
+  # and resource_prefix defaults to aws-eks-infra.
+  platform_parameter_prefix = "/platform/${var.resource_prefix}"
 
   published_parameters = {
     "cluster-name" = {

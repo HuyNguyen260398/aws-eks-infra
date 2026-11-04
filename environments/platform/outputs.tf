@@ -78,6 +78,11 @@ output "keda_operator_role_arn" {
   value       = module.platform_cluster.keda_operator_role_arn
 }
 
+output "otel_collector_role_arn" {
+  description = "ARN of the IAM role the OpenTelemetry Collector runs as."
+  value       = module.platform_cluster.otel_collector_role_arn
+}
+
 output "platform_parameter_prefix" {
   description = "SSM parameter path under which the platform publishes identifiers for workload repositories."
   value       = local.platform_parameter_prefix

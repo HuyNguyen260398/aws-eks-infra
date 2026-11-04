@@ -8,6 +8,8 @@ on:
       - "gitops/**"
       - ".yamllint.yml"
       - "Makefile"
+      - "scripts/render-collector.sh"
+      - "scripts/check-collector.sh"
       - ".github/workflows/yaml-ci.yaml"
   push:
     branches: [main]
@@ -17,6 +19,8 @@ on:
       - "gitops/**"
       - ".yamllint.yml"
       - "Makefile"
+      - "scripts/render-collector.sh"
+      - "scripts/check-collector.sh"
       - ".github/workflows/yaml-ci.yaml"
 
 permissions:
@@ -48,5 +52,13 @@ jobs:
             --output /tmp/kubeconform.tar.gz
           tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
           sudo install /tmp/kubeconform /usr/local/bin/kubeconform
+          curl --fail --location --silent --show-error \
+            https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64 \
+            --output /tmp/yq
+          sudo install /tmp/yq /usr/local/bin/yq
       - name: Validate YAML and Kubernetes manifests
         run: make yaml-check
+      # Renders the collector add-on, asserts on it and runs otelcol-contrib
+      # validate in Docker (available on ubuntu-latest).
+      - name: Check the OpenTelemetry Collector add-on
+        run: make collector-check
