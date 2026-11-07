@@ -43,7 +43,22 @@ variable "aws_load_balancer_controller_role_arn" {
   type        = string
 }
 
-variable "platform_parameter_prefix" {
-  description = "SSM prefix of the platform's parameters (/<resource_prefix>/platform); GitOps add-ons append their own path."
+variable "adot_role_arn" {
+  description = "IRSA role ARN for the ADOT collector service account."
+  type        = string
+}
+
+variable "fargate_log_group_name" {
+  description = "CloudWatch log group receiving Fargate container logs."
+  type        = string
+}
+
+variable "efs_file_system_id" {
+  description = "ID of the EFS filesystem backing platform application storage."
+  type        = string
+}
+
+variable "jenkins_efs_access_point_id" {
+  description = "ID of the EFS access point scoping Jenkins to /jenkins-home."
   type        = string
 }

@@ -1,0 +1,7 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.storageClassName }}
+# Static provisioning: the PV below references the EFS filesystem directly.
+# No dynamic parameters and no EFS CSI controller are required on Fargate.
+provisioner: efs.csi.aws.com
