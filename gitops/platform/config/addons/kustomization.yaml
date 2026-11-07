@@ -4,4 +4,4 @@ resources:
   - aws-load-balancer-controller.yaml
   - argo-rollouts.yaml
   - cert-manager.yaml
-  - keda.yaml
+  - opentelemetry-operator.yaml

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: jenkins-storage
+description: Static EFS StorageClass, PersistentVolume, and PVC for the Jenkins controller on Fargate
+version: 1.0.0
+type: application
