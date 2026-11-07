@@ -6,7 +6,7 @@ This repository manages the EKS platform that hosts Cashight: one cluster with a
 
 ## Validation
 
-Run `make terraform-check` for HCL changes, `make yaml-check` for GitOps changes, and `make collector-check` for changes to the OpenTelemetry Collector add-on. Never commit state, plans, credentials, `backend.hcl`, or `terraform.tfvars`.
+Run `make terraform-check` for HCL changes and `make yaml-check` for GitOps changes. Never commit state, plans, credentials, `backend.hcl`, or `terraform.tfvars`.
 
 ## Terraform
 

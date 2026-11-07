@@ -5,4 +5,3 @@ resources:
   - argo-rollouts.yaml
   - cert-manager.yaml
   - keda.yaml
-  - opentelemetry-collector.yaml

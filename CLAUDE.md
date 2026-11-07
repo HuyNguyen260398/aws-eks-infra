@@ -9,8 +9,8 @@ Terraform + GitOps for the single Amazon EKS cluster that hosts **Cashight** (`e
 - **One Spot Graviton node** (`<cluster>-general`; `t4g.medium`, 2 vCPU / 4 GiB) in a **public subnet**, so there is no NAT gateway. No Fargate, no Auto Mode, no Karpenter.
 - EKS add-ons: VPC CNI (NetworkPolicy enforcement and prefix delegation on), kube-proxy, CoreDNS, EKS Pod Identity Agent.
 - **Managed Argo CD is opt-in** (`enable_argocd`, default `false`). It bills per capability-hour and per Application-hour, so it stays off until there is something to deploy. Everything under `gitops/` only takes effect once it is on.
-- GitOps add-ons (installed by Argo CD): AWS Load Balancer Controller, cert-manager (issues that controller's webhook certificate), Argo Rollouts, KEDA, the OpenTelemetry Collector, and the guarded `cashight` namespace.
-- Telemetry: an OpenTelemetry Collector DaemonSet (GitOps add-on, namespace `observability`) sends metrics, logs and traces to the Grafana Cloud free tier. An init container under EKS Pod Identity reads the OTLP endpoint, instance ID and write token from SSM (`/<resource_prefix>/platform/grafana-cloud/*`, created by hand) into a memory-backed volume, so there is no Kubernetes Secret. Alerts, the dashboard and the uptime check live in Cashight's `terraform/grafana/`; the runbook is Cashight's `docs/observability.md`.
+- GitOps add-ons (installed by Argo CD): AWS Load Balancer Controller, cert-manager (issues that controller's webhook certificate), Argo Rollouts, KEDA, and the guarded `cashight` namespace.
+- Telemetry is not decided yet; the observability plan adds it.
 
 ## Commands
 
@@ -18,7 +18,6 @@ Terraform + GitOps for the single Amazon EKS cluster that hosts **Cashight** (`e
 make terraform-check      # fmt -check + validate every root + tflint + checkov  (run for any .tf change)
 make yaml-check           # yamllint + helm lint/template + kubeconform + kustomize build  (run for any gitops/ change)
 make shell-check          # shellcheck at default severity  (run for any scripts/ change)
-make collector-check      # render the collector add-on, assert on it, otelcol-contrib validate in Docker  (run for any collector change)
 ```
 
 Sub-targets when you need a narrower loop: `terraform-fmt`, `terraform-validate`, `terraform-lint`, `yaml-lint`, `helm-check`, `kustomize-check`.

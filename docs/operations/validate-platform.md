@@ -8,12 +8,9 @@ Static gates run with no AWS credentials. Live gates require credentials and a c
 make terraform-check   # fmt -check + validate every root + tflint + checkov
 make yaml-check        # yamllint + helm lint/template + kubeconform + kustomize build
 make shell-check       # shellcheck on scripts/*.sh
-make collector-check   # collector add-on render + assertions + otelcol-contrib validate (Docker)
 ```
 
-All four must exit `0`. `collector-check` needs Docker and network access, so it is
-not part of `yaml-check`; it renders the ApplicationSet with `scripts/render-collector.sh`
-and checks the workload shape, the RBAC, the pipeline and the attribute allowlist. `shell-check` runs shellcheck at its **default**
+All three must exit `0`. `shell-check` runs shellcheck at its **default**
 severity, so style and info findings fail too — the operational scripts are small
 enough to keep at zero findings, and the four defects recorded in
 [first deployment defects](first-deployment-defects.md) all lived in scripts that
@@ -44,7 +41,6 @@ Prints one `PASS`/`FAIL` line per assertion and exits nonzero if any fail.
   CoreDNS rolled out
 - The four SSM parameters under `PARAMETER_PREFIX` exist, and `cluster-name`
   matches the cluster
-- The Pod Identity association `observability/otel-collector` exists
 
 With `enable_argocd = false` the script stops here and prints
 `SKIP GitOps and workload checks`.
@@ -55,9 +51,6 @@ With `enable_argocd = false` the script stops here and prints
 - AWS Load Balancer Controller, Argo Rollouts, cert-manager (controller and
   webhook) and KEDA (operator, metrics API server, admission webhooks) rolled
   out; KEDA's external metrics APIService `Available`
-- The collector DaemonSet `observability/otel-collector-agent` ready on every
-  node, no Secret in `observability` other than ServiceAccount tokens, and the
-  namespace labelled Pod Security `privileged`
 - At least one Argo CD Application exists, and every one is `Synced` and
   `Healthy`. Failing Applications are named with their status
 - Each `WORKLOAD_NAMESPACES` namespace (default `cashight`) enforces Pod

@@ -78,8 +78,3 @@ output "keda_operator_role_arn" {
   description = "ARN of the IAM role the KEDA operator runs as. Scaler roles trust this ARN."
   value       = aws_iam_role.keda_operator.arn
 }
-
-output "otel_collector_role_arn" {
-  description = "ARN of the IAM role the OpenTelemetry Collector runs as (Pod Identity, observability/otel-collector)."
-  value       = aws_iam_role.otel_collector.arn
-}

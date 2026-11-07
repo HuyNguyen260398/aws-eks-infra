@@ -7,8 +7,7 @@
 #                        add-ons, no Fargate, identifiers published.
 #   GitOps               only when enable_argocd is on: the Argo CD capability,
 #                        the add-ons it installs (load balancer controller,
-#                        cert-manager, Argo Rollouts, KEDA, the
-#                        OpenTelemetry Collector), Applications
+#                        cert-manager, Argo Rollouts, KEDA), Applications
 #                        converged, tenant namespaces guarded.
 #   Workloads            with GitOps on. Greenfield by default - no workload
 #                        Pods, no Ingress, no LoadBalancer Service. Set
@@ -75,9 +74,6 @@ for parameter in cluster-name alb-group-name keda-operator-role-arn codeconnecti
   value="$(aws ssm get-parameter --name "${parameter_prefix}/${parameter}" --region "$region" --query 'Parameter.Value' --output text 2>/dev/null || true)"
   if [ -n "$value" ] && [ "$value" != None ]; then pass "SSM ${parameter_prefix}/${parameter}"; else fail_line "SSM ${parameter_prefix}/${parameter}"; fi
 done
-# --- The collector's role binds by namespace and ServiceAccount name; the
-# association exists before Argo CD creates either.
-assert_eq "Pod Identity association observability/otel-collector" "$(aws eks list-pod-identity-associations --cluster-name "$cluster" --namespace observability --service-account otel-collector --region "$region" --query 'length(associations)' --output text)" 1
 assert_eq "Published cluster-name matches" "$(aws ssm get-parameter --name "${parameter_prefix}/cluster-name" --region "$region" --query 'Parameter.Value' --output text 2>/dev/null || true)" "$cluster"
 
 if [ "$argocd_enabled" != true ]; then
@@ -96,17 +92,6 @@ for deployment in 'kube-system aws-load-balancer-controller' 'argo-rollouts argo
     fail_line "Deployment $ns/$name"
   fi
 done
-
-# --- Telemetry: the collector DaemonSet (the chart suffixes it -agent) runs on
-# every node, reads its tokens from SSM (no Secret), and may mount hostPath.
-collector_ds="$(kubectl -n observability get daemonset otel-collector-agent -o json 2>/dev/null || echo '{}')"
-if jq -e '(.status.desiredNumberScheduled // 0) >= 1 and .status.numberReady == .status.desiredNumberScheduled' <<<"$collector_ds" >/dev/null; then
-  pass "DaemonSet observability/otel-collector-agent ready"
-else
-  fail_line "DaemonSet observability/otel-collector-agent ready ($(jq -r '"\(.status.numberReady // 0)/\(.status.desiredNumberScheduled // 0)"' <<<"$collector_ds"))"
-fi
-assert_eq "No Secrets in observability" "$(kubectl -n observability get secrets -o json 2>/dev/null | jq '[.items[] | select(.type != "kubernetes.io/service-account-token")] | length')" 0
-assert_eq "Namespace observability is privileged" "$(kubectl get namespace observability -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}' 2>/dev/null || true)" privileged
 
 assert_eq "KEDA external metrics APIService Available" "$(kubectl get apiservice v1beta1.external.metrics.k8s.io -o jsonpath='{.status.conditions[?(@.type=="Available")].status}')" True
 
@@ -140,7 +125,7 @@ done
 # --------------------------------------------------------------- workloads ---
 
 # Namespaces the platform itself runs in.
-platform_namespaces='^(kube-system|argo-rollouts|cert-manager|keda|observability|argocd|kube-public|kube-node-lease|default)$'
+platform_namespaces='^(kube-system|argo-rollouts|cert-manager|keda|argocd|kube-public|kube-node-lease|default)$'
 tenants_json="$(printf '%s\n' "${workload_namespaces[@]}" | jq -R . | jq -s .)"
 # A workload Pod lives in an apps-* namespace or a tenant namespace.
 workload_filter="(.metadata.namespace | startswith(\"apps-\")) or (.metadata.namespace as \$ns | \$tenants | index(\$ns) != null)"

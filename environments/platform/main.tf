@@ -79,7 +79,6 @@ module "platform_cluster" {
   argocd_admin_group_id        = aws_identitystore_group.argocd_admins.group_id
   github_connection_arn        = aws_codeconnections_connection.github.arn
   gitops_repo_url              = local.gitops_repo_url
-  grafana_cloud_parameter_path = "${local.platform_parameter_prefix}/grafana-cloud"
   tags                         = local.tags
 }
 
@@ -98,7 +97,6 @@ module "platform_cluster_bootstrap" {
   vpc_id                                = module.platform_cluster.vpc_id
   aws_region                            = var.aws_region
   aws_load_balancer_controller_role_arn = module.platform_cluster.aws_load_balancer_controller_role_arn
-  platform_parameter_prefix             = local.platform_parameter_prefix
 
   depends_on = [module.platform_cluster]
 }
